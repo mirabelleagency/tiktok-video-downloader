@@ -555,9 +555,66 @@ async function getVideoUrl(videoId) {
     }
   }
   
+  // Priority 6: Fetch from TikTok API directly (last resort)
+  debugLog('Trying API fetch...', 'warn');
+  updateDebugOverlay({ source: 'Fetching API...', status: 'API call...', statusClass: 'warning' });
+  const apiUrl = await fetchVideoUrlFromApi(videoId);
+  if (apiUrl) {
+    debugLog('Source: TikTok API ✓', 'success');
+    updateDebugOverlay({ source: 'TikTok API', status: 'Found!', statusClass: '' });
+    return apiUrl;
+  }
+  
   debugLog('NO URL FOUND!', 'error');
   updateDebugOverlay({ source: 'None - All failed', status: 'NOT FOUND', statusClass: 'error' });
   return null;
+}
+
+// Fetch video URL directly from TikTok's API
+async function fetchVideoUrlFromApi(videoId) {
+  try {
+    debugLog(`Fetching API for video: ${videoId}`, 'info');
+    
+    // Try TikTok's detail API endpoint
+    const apiUrl = `https://www.tiktok.com/api/item/detail/?itemId=${videoId}`;
+    
+    const response = await fetch(apiUrl, {
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      debugLog(`API response not OK: ${response.status}`, 'warn');
+      return null;
+    }
+    
+    const data = await response.json();
+    debugLog('API response received', 'info');
+    
+    // Extract video URL from response
+    if (data?.itemInfo?.itemStruct?.video) {
+      const video = data.itemInfo.itemStruct.video;
+      const url = video.downloadAddr || video.playAddr;
+      if (url) {
+        debugLog('Got URL from API', 'success');
+        // Also store it for future use
+        interceptedVideoUrls.set(videoId, {
+          videoUrl: url,
+          username: data.itemInfo.itemStruct.author?.uniqueId || '',
+          description: data.itemInfo.itemStruct.desc || ''
+        });
+        return url;
+      }
+    }
+    
+    debugLog('No video in API response', 'warn');
+    return null;
+  } catch (error) {
+    debugLog(`API fetch error: ${error.message}`, 'error');
+    return null;
+  }
 }
 
 // Extract video URL from video container data attributes
