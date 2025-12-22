@@ -594,7 +594,9 @@ async function getVideoUrl(videoId) {
 // This bypasses any caching issues by making a fresh request
 async function getFreshVideoData() {
   try {
-    const videoId = getVideoIdFromUrl();
+    const videoId = extractVideoIdFromUrl();
+    const username = extractUsernameFromUrl();
+    
     if (!videoId) {
       debugLog('No video ID in URL for fresh fetch', 'error');
       return null;
@@ -602,13 +604,19 @@ async function getFreshVideoData() {
     
     debugLog(`Getting fresh data for: ${videoId}`, 'info');
     
-    // Fetch the current page fresh
-    const response = await fetch(window.location.href, {
+    // Build the direct video URL - this guarantees we get the correct video
+    const directUrl = `https://www.tiktok.com/@${username || '_'}/video/${videoId}`;
+    debugLog(`Fetching: ${directUrl}`, 'info');
+    
+    // Fetch the video page fresh with cache-busting
+    const response = await fetch(directUrl, {
       credentials: 'include',
       headers: {
-        'Accept': 'text/html'
+        'Accept': 'text/html,application/xhtml+xml',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       },
-      cache: 'no-cache' // Force fresh request
+      cache: 'no-store' // Force fresh request, bypass all caches
     });
     
     if (!response.ok) {
@@ -664,7 +672,7 @@ async function getFreshVideoData() {
     return {
       videoId: videoId,
       videoUrl: videoUrl,
-      username: author?.uniqueId || extractUsernameFromUrl() || 'unknown',
+      username: author?.uniqueId || username || 'unknown',
       description: item.desc || '',
       timestamp: new Date().toISOString(),
       pageUrl: window.location.href
