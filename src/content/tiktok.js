@@ -559,23 +559,25 @@ async function getVideoUrl(videoId) {
     return interceptedVideoUrls.get(videoId).videoUrl;
   }
   
-  // Priority 2: Wait briefly for intercepted URL (TikTok might still be loading)
-  debugLog('Waiting for intercepted URL (3s)...', 'warn');
+  // Priority 2: Try injected script's seenVideoUrls map (works after scrolling!)
+  // This is the most reliable fallback - TikTok preloads video URLs via batch APIs
+  debugLog('Trying injected script seenVideoUrls...', 'info');
+  updateDebugOverlay({ source: 'Stored URLs...', status: 'Checking...', statusClass: 'warning' });
+  const storedUrl = await getCurrentVideoFromElement(videoId);
+  if (storedUrl) {
+    debugLog('Source: Stored Video URLs ✓', 'success');
+    updateDebugOverlay({ source: 'Stored URLs', status: 'Found!', statusClass: '' });
+    return storedUrl;
+  }
+  
+  // Priority 3: Wait briefly for intercepted URL (TikTok might still be loading)
+  debugLog('Waiting for intercepted URL (1s)...', 'warn');
   updateDebugOverlay({ source: 'Waiting for intercept...', status: 'Waiting...', statusClass: 'warning' });
-  const waitedUrl = await waitForInterceptedUrl(videoId, 3000);
+  const waitedUrl = await waitForInterceptedUrl(videoId, 1000); // Reduced from 3s to 1s
   if (waitedUrl) {
     debugLog('Source: Waited Intercepted ✓', 'success');
     updateDebugOverlay({ source: 'Intercepted (waited)', status: 'Found!', statusClass: '' });
     return waitedUrl;
-  }
-  
-  // Priority 3: Try to find video URL in the current video's container data attributes
-  debugLog('Trying container data...', 'info');
-  const containerUrl = extractUrlFromVideoContainer(videoId);
-  if (containerUrl) {
-    debugLog('Source: Container Data ✓', 'success');
-    updateDebugOverlay({ source: 'Container Data', status: 'Found!', statusClass: '' });
-    return containerUrl;
   }
   
   // Priority 4: Extract from page data (with strict video ID verification)
@@ -587,11 +589,11 @@ async function getVideoUrl(videoId) {
     return pageDataResult;
   }
   
-  // Priority 5: Get from video element source (last resort)
-  debugLog('Trying video element...', 'info');
+  // Priority 5: Get from video element source
+  debugLog('Trying video element src...', 'info');
   const videoElement = document.querySelector('video');
   if (videoElement) {
-    // Check src attribute
+    // Check src attribute (non-blob)
     if (videoElement.src && !videoElement.src.startsWith('blob:')) {
       debugLog('Source: Video Element ✓', 'success');
       updateDebugOverlay({ source: 'Video Element src', status: 'Found!', statusClass: '' });
@@ -605,26 +607,6 @@ async function getVideoUrl(videoId) {
       updateDebugOverlay({ source: 'Source Element', status: 'Found!', statusClass: '' });
       return sourceEl.src;
     }
-  }
-  
-  // Priority 6: Fetch from TikTok API directly
-  debugLog('Trying API fetch...', 'warn');
-  updateDebugOverlay({ source: 'Fetching API...', status: 'API call...', statusClass: 'warning' });
-  const apiUrl = await fetchVideoUrlFromApi(videoId);
-  if (apiUrl) {
-    debugLog('Source: TikTok API ✓', 'success');
-    updateDebugOverlay({ source: 'TikTok API', status: 'Found!', statusClass: '' });
-    return apiUrl;
-  }
-  
-  // Priority 7: Try to get from current playing video element via injected script
-  debugLog('Trying video element via injected script...', 'warn');
-  updateDebugOverlay({ source: 'Video Element...', status: 'Checking...', statusClass: 'warning' });
-  const elementUrl = await getCurrentVideoFromElement(videoId);
-  if (elementUrl) {
-    debugLog('Source: Video Element (injected) ✓', 'success');
-    updateDebugOverlay({ source: 'Video Element', status: 'Found!', statusClass: '' });
-    return elementUrl;
   }
 
   debugLog('NO URL FOUND!', 'error');
@@ -726,147 +708,7 @@ async function getFreshVideoData() {
   }
 }
 
-// Fetch video URL directly from TikTok's API
-async function fetchVideoUrlFromApi(videoId) {
-  try {
-    debugLog(`Fetching API for video: ${videoId}`, 'info');
-    
-    // Method 1: Try TikTok's detail API endpoint
-    try {
-      const apiUrl = `https://www.tiktok.com/api/item/detail/?itemId=${videoId}`;
-      const response = await fetch(apiUrl, {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        debugLog('API response received', 'info');
-        
-        if (data?.itemInfo?.itemStruct?.video) {
-          const video = data.itemInfo.itemStruct.video;
-          const url = video.downloadAddr || video.playAddr;
-          if (url) {
-            debugLog('Got URL from API!', 'success');
-            interceptedVideoUrls.set(videoId, {
-              videoUrl: url,
-              username: data.itemInfo.itemStruct.author?.uniqueId || '',
-              description: data.itemInfo.itemStruct.desc || ''
-            });
-            return url;
-          }
-        }
-      }
-    } catch (e) {
-      debugLog(`API method 1 failed: ${e.message}`, 'warn');
-    }
-    
-    // Method 2: Fetch the video page HTML and parse
-    try {
-      debugLog('Trying page fetch method...', 'info');
-      const pageUrl = `https://www.tiktok.com/@${extractUsernameFromUrl()}/video/${videoId}`;
-      const response = await fetch(pageUrl, {
-        credentials: 'include',
-        headers: {
-          'Accept': 'text/html'
-        }
-      });
-      
-      if (response.ok) {
-        const html = await response.text();
-        
-        // Look for __UNIVERSAL_DATA_FOR_REHYDRATION__ in the HTML
-        const match = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([^<]+)<\/script>/);
-        if (match) {
-          const data = JSON.parse(match[1]);
-          const videoDetail = data?.__DEFAULT_SCOPE__?.['webapp.video-detail'];
-          if (videoDetail?.itemInfo?.itemStruct?.video) {
-            const video = videoDetail.itemInfo.itemStruct.video;
-            const url = video.downloadAddr || video.playAddr;
-            if (url) {
-              debugLog('Got URL from page fetch!', 'success');
-              interceptedVideoUrls.set(videoId, {
-                videoUrl: url,
-                username: videoDetail.itemInfo.itemStruct.author?.uniqueId || '',
-                description: videoDetail.itemInfo.itemStruct.desc || ''
-              });
-              return url;
-            }
-          }
-        }
-      }
-    } catch (e) {
-      debugLog(`Page fetch method failed: ${e.message}`, 'warn');
-    }
-    
-    debugLog('All API methods failed', 'error');
-    return null;
-  } catch (error) {
-    debugLog(`API fetch error: ${error.message}`, 'error');
-    return null;
-  }
-}
-
-// Extract video URL from video container data attributes
-function extractUrlFromVideoContainer(targetVideoId) {
-  console.log('[TikTok DL] Searching video container for ID:', targetVideoId);
-  
-  // Find video element currently playing
-  const videos = document.querySelectorAll('video');
-  for (const video of videos) {
-    // Find the container with video data
-    let container = video.closest('[data-e2e="recommend-list-item-container"]') ||
-                    video.closest('[class*="DivItemContainer"]') ||
-                    video.closest('[class*="video-feed-item"]') ||
-                    video.closest('[class*="DivVideoWrapper"]');
-    
-    if (!container) {
-      container = video.parentElement;
-      // Go up a few levels to find data
-      for (let i = 0; i < 10 && container; i++) {
-        // Look for link containing video ID
-        const videoLink = container.querySelector(`a[href*="/video/${targetVideoId}"]`) ||
-                         container.querySelector(`a[href*="/@"][href*="/video/"]`);
-        if (videoLink) {
-          container = container;
-          break;
-        }
-        container = container.parentElement;
-      }
-    }
-    
-    if (container) {
-      // Check for data attributes
-      const allElements = container.querySelectorAll('*');
-      for (const el of allElements) {
-        // Check data attributes for video URL
-        for (const attr of el.attributes || []) {
-          if (attr.value && attr.value.includes('.mp4') && 
-              (attr.value.includes('tiktokcdn') || attr.value.includes('muscdn'))) {
-            console.log('[TikTok DL] Found URL in data attribute:', attr.name);
-            return attr.value;
-          }
-        }
-      }
-      
-      // Check for JSON in script tags within container
-      const scripts = container.querySelectorAll('script[type="application/json"]');
-      for (const script of scripts) {
-        try {
-          const data = JSON.parse(script.textContent);
-          const url = findVideoUrlInObject(data, targetVideoId);
-          if (url) return url;
-        } catch (e) {}
-      }
-    }
-  }
-  
-  return null;
-}
-
-// Recursively find video URL in object
+// Recursively find video URL in object (used by extractFromPageData)
 function findVideoUrlInObject(obj, targetVideoId, depth = 0) {
   if (depth > 10 || !obj) return null;
   
