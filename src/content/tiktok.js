@@ -305,20 +305,36 @@ async function detectFeedVideo() {
 async function getVideoUrl(videoId) {
   console.log('[TikTok DL] Getting URL for video:', videoId);
   
-  // Priority 1: Check intercepted URLs (most reliable for current video)
+  // Priority 1: Check intercepted URLs (most reliable - captured from actual API calls)
   if (interceptedVideoUrls.has(videoId)) {
     console.log('[TikTok DL] Found in intercepted URLs');
     return interceptedVideoUrls.get(videoId).videoUrl;
   }
   
-  // Priority 2: Extract from page data (with video ID verification)
+  // Priority 2: Wait briefly for intercepted URL (TikTok might still be loading)
+  // This is key - when scrolling, TikTok makes an API call we should intercept
+  console.log('[TikTok DL] Waiting for intercepted URL...');
+  const waitedUrl = await waitForInterceptedUrl(videoId, 3000);
+  if (waitedUrl) {
+    return waitedUrl;
+  }
+  
+  // Priority 3: Try to find video URL in the current video's container data attributes
+  const containerUrl = extractUrlFromVideoContainer(videoId);
+  if (containerUrl) {
+    console.log('[TikTok DL] Found in video container');
+    return containerUrl;
+  }
+  
+  // Priority 4: Extract from page data (with strict video ID verification)
+  // Only use if it matches the exact video ID we're looking for
   const pageDataResult = extractFromPageData(videoId);
   if (pageDataResult) {
     console.log('[TikTok DL] Found in page data');
     return pageDataResult;
   }
   
-  // Priority 3: Get from video element source
+  // Priority 5: Get from video element source (last resort)
   const videoElement = document.querySelector('video');
   if (videoElement) {
     // Check src attribute
@@ -335,20 +351,104 @@ async function getVideoUrl(videoId) {
     }
   }
   
-  // Priority 4: Wait briefly for intercepted URL (TikTok might be loading)
-  console.log('[TikTok DL] Waiting for intercepted URL...');
-  const waitedUrl = await waitForInterceptedUrl(videoId, 2000);
-  if (waitedUrl) {
-    return waitedUrl;
+  console.log('[TikTok DL] No video URL found');
+  return null;
+}
+
+// Extract video URL from video container data attributes
+function extractUrlFromVideoContainer(targetVideoId) {
+  console.log('[TikTok DL] Searching video container for ID:', targetVideoId);
+  
+  // Find video element currently playing
+  const videos = document.querySelectorAll('video');
+  for (const video of videos) {
+    // Find the container with video data
+    let container = video.closest('[data-e2e="recommend-list-item-container"]') ||
+                    video.closest('[class*="DivItemContainer"]') ||
+                    video.closest('[class*="video-feed-item"]') ||
+                    video.closest('[class*="DivVideoWrapper"]');
+    
+    if (!container) {
+      container = video.parentElement;
+      // Go up a few levels to find data
+      for (let i = 0; i < 10 && container; i++) {
+        // Look for link containing video ID
+        const videoLink = container.querySelector(`a[href*="/video/${targetVideoId}"]`) ||
+                         container.querySelector(`a[href*="/@"][href*="/video/"]`);
+        if (videoLink) {
+          container = container;
+          break;
+        }
+        container = container.parentElement;
+      }
+    }
+    
+    if (container) {
+      // Check for data attributes
+      const allElements = container.querySelectorAll('*');
+      for (const el of allElements) {
+        // Check data attributes for video URL
+        for (const attr of el.attributes || []) {
+          if (attr.value && attr.value.includes('.mp4') && 
+              (attr.value.includes('tiktokcdn') || attr.value.includes('muscdn'))) {
+            console.log('[TikTok DL] Found URL in data attribute:', attr.name);
+            return attr.value;
+          }
+        }
+      }
+      
+      // Check for JSON in script tags within container
+      const scripts = container.querySelectorAll('script[type="application/json"]');
+      for (const script of scripts) {
+        try {
+          const data = JSON.parse(script.textContent);
+          const url = findVideoUrlInObject(data, targetVideoId);
+          if (url) return url;
+        } catch (e) {}
+      }
+    }
   }
   
-  console.log('[TikTok DL] No video URL found');
+  return null;
+}
+
+// Recursively find video URL in object
+function findVideoUrlInObject(obj, targetVideoId, depth = 0) {
+  if (depth > 10 || !obj) return null;
+  
+  if (typeof obj === 'string') {
+    if (obj.includes('.mp4') && (obj.includes('tiktokcdn') || obj.includes('muscdn'))) {
+      return obj;
+    }
+    return null;
+  }
+  
+  if (typeof obj === 'object') {
+    // Check if this object has matching video ID
+    if (obj.id === targetVideoId || obj.videoId === targetVideoId) {
+      if (obj.video) {
+        if (obj.video.downloadAddr) return obj.video.downloadAddr;
+        if (obj.video.playAddr) return obj.video.playAddr;
+      }
+      if (obj.downloadAddr) return obj.downloadAddr;
+      if (obj.playAddr) return obj.playAddr;
+    }
+    
+    for (const key of Object.keys(obj)) {
+      const result = findVideoUrlInObject(obj[key], targetVideoId, depth + 1);
+      if (result) return result;
+    }
+  }
+  
   return null;
 }
 
 // Wait for intercepted URL with timeout
 async function waitForInterceptedUrl(videoId, timeout = 2000) {
   const startTime = Date.now();
+  
+  console.log('[TikTok DL] Waiting for intercepted URL for video:', videoId);
+  console.log('[TikTok DL] Current intercepted videos:', Array.from(interceptedVideoUrls.keys()));
   
   while (Date.now() - startTime < timeout) {
     if (interceptedVideoUrls.has(videoId)) {
@@ -358,6 +458,8 @@ async function waitForInterceptedUrl(videoId, timeout = 2000) {
     await new Promise(resolve => setTimeout(resolve, 200));
   }
   
+  console.log('[TikTok DL] Timeout waiting for intercepted URL');
+  console.log('[TikTok DL] Available intercepted videos after timeout:', Array.from(interceptedVideoUrls.keys()));
   return null;
 }
 

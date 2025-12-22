@@ -19,14 +19,28 @@
     '/api/post/item_list',
     '/aweme/v1/feed',
     '/aweme/v1/play',
-    '/node/video'
+    '/node/video',
+    '/api/comment/list',
+    '/tiktok/webapp/video',
+    '/api/user/detail',
+    '/v1/feed',
+    '/v2/feed'
   ];
+  
+  // Track all video URLs we've seen in current session
+  const seenVideoUrls = new Map();
   
   // Dispatch event to content script
   function dispatchVideoUrl(videoId, videoUrl, username, description) {
-    window.dispatchEvent(new CustomEvent('tiktok-video-url', {
-      detail: { videoId, videoUrl, username, description }
-    }));
+    // Only dispatch if we haven't seen this exact combo before, or if URL changed
+    const existingUrl = seenVideoUrls.get(videoId);
+    if (existingUrl !== videoUrl) {
+      seenVideoUrls.set(videoId, videoUrl);
+      console.log('[TikTok DL Injected] Dispatching video:', videoId);
+      window.dispatchEvent(new CustomEvent('tiktok-video-url', {
+        detail: { videoId, videoUrl, username, description }
+      }));
+    }
   }
   
   // Extract video data from response
@@ -156,6 +170,25 @@
     return API_ENDPOINTS.some(endpoint => url.includes(endpoint));
   }
   
+  // Check if response might contain video data
+  function mightContainVideoData(url, responseText) {
+    // Check URL patterns
+    if (isApiEndpoint(url)) return true;
+    
+    // Check if response contains video-related fields
+    if (responseText && (
+      responseText.includes('"playAddr"') ||
+      responseText.includes('"downloadAddr"') ||
+      responseText.includes('"bitrateInfo"') ||
+      responseText.includes('"play_addr"') ||
+      responseText.includes('"video":')
+    )) {
+      return true;
+    }
+    
+    return false;
+  }
+
   // ============ XHR Interception ============
   
   const originalXHROpen = XMLHttpRequest.prototype.open;
@@ -168,17 +201,17 @@
   };
   
   XMLHttpRequest.prototype.send = function(body) {
-    if (this._tiktokUrl && isApiEndpoint(this._tiktokUrl)) {
-      this.addEventListener('load', function() {
-        try {
-          if (this.responseText) {
-            extractVideoData(this.responseText, this._tiktokUrl);
-          }
-        } catch (e) {
-          // Silently fail
+    // Listen to ALL responses, we'll check content later
+    this.addEventListener('load', function() {
+      try {
+        if (this.responseText && mightContainVideoData(this._tiktokUrl, this.responseText)) {
+          console.log('[TikTok DL Injected] XHR response might contain video data:', this._tiktokUrl);
+          extractVideoData(this.responseText, this._tiktokUrl);
         }
-      });
-    }
+      } catch (e) {
+        // Silently fail
+      }
+    });
     return originalXHRSend.apply(this, [body]);
   };
   
@@ -190,15 +223,17 @@
     const url = typeof input === 'string' ? input : input.url;
     const response = await originalFetch.apply(this, [input, init]);
     
-    if (isApiEndpoint(url)) {
-      try {
-        // Clone response so we can read it without consuming
-        const clone = response.clone();
-        const text = await clone.text();
+    try {
+      // Clone response so we can read it without consuming
+      const clone = response.clone();
+      const text = await clone.text();
+      
+      if (mightContainVideoData(url, text)) {
+        console.log('[TikTok DL Injected] Fetch response might contain video data:', url);
         extractVideoData(text, url);
-      } catch (e) {
-        // Silently fail
       }
+    } catch (e) {
+      // Silently fail
     }
     
     return response;
