@@ -416,6 +416,38 @@ async function fetchVideoAsBase64(videoUrl) {
   }
 }
 
+// Get current video URL directly from the playing video element via injected script
+async function getCurrentVideoFromElement(videoId) {
+  return new Promise((resolve) => {
+    const requestId = `current_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    
+    const timeout = setTimeout(() => {
+      window.removeEventListener('tiktok-current-video-result', handler);
+      resolve(null);
+    }, 5000);
+    
+    function handler(event) {
+      if (event.detail.requestId === requestId) {
+        clearTimeout(timeout);
+        window.removeEventListener('tiktok-current-video-result', handler);
+        if (event.detail.success) {
+          debugLog(`Got URL from video element (${event.detail.method})`, 'success');
+          resolve(event.detail.videoUrl);
+        } else {
+          debugLog(`Video element method failed: ${event.detail.error}`, 'warn');
+          resolve(null);
+        }
+      }
+    }
+    
+    window.addEventListener('tiktok-current-video-result', handler);
+    
+    window.dispatchEvent(new CustomEvent('tiktok-get-current-video', {
+      detail: { requestId, videoId }
+    }));
+  });
+}
+
 // Detect video on current page
 async function detectVideo(forceRefresh = false) {
   const url = window.location.href;
@@ -575,7 +607,7 @@ async function getVideoUrl(videoId) {
     }
   }
   
-  // Priority 6: Fetch from TikTok API directly (last resort)
+  // Priority 6: Fetch from TikTok API directly
   debugLog('Trying API fetch...', 'warn');
   updateDebugOverlay({ source: 'Fetching API...', status: 'API call...', statusClass: 'warning' });
   const apiUrl = await fetchVideoUrlFromApi(videoId);
@@ -585,6 +617,16 @@ async function getVideoUrl(videoId) {
     return apiUrl;
   }
   
+  // Priority 7: Try to get from current playing video element via injected script
+  debugLog('Trying video element via injected script...', 'warn');
+  updateDebugOverlay({ source: 'Video Element...', status: 'Checking...', statusClass: 'warning' });
+  const elementUrl = await getCurrentVideoFromElement(videoId);
+  if (elementUrl) {
+    debugLog('Source: Video Element (injected) ✓', 'success');
+    updateDebugOverlay({ source: 'Video Element', status: 'Found!', statusClass: '' });
+    return elementUrl;
+  }
+
   debugLog('NO URL FOUND!', 'error');
   updateDebugOverlay({ source: 'None - All failed', status: 'NOT FOUND', statusClass: 'error' });
   return null;

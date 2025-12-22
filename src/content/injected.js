@@ -24,11 +24,18 @@
     '/tiktok/webapp/video',
     '/api/user/detail',
     '/v1/feed',
-    '/v2/feed'
+    '/v2/feed',
+    '/api/related/item_list'
   ];
   
   // Track all video URLs we've seen in current session
   const seenVideoUrls = new Map();
+  
+  // Track blob URLs to their original video URLs
+  const blobToSourceMap = new Map();
+  
+  // Track video element sources
+  const videoSourceMap = new Map();
   
   // Dispatch event to content script
   function dispatchVideoUrl(videoId, videoUrl, username, description) {
@@ -349,6 +356,157 @@
       }));
     }
   });
+  
+  // ============ Get Current Video Directly ============
+  
+  // Get the currently playing video directly from video element
+  window.addEventListener('tiktok-get-current-video', async function(event) {
+    const { requestId, videoId } = event.detail;
+    console.log('[TikTok DL Injected] Getting current video:', requestId, videoId);
+    
+    try {
+      // Find the video element that's currently playing
+      const videos = document.querySelectorAll('video');
+      let targetVideo = null;
+      
+      for (const video of videos) {
+        // Check if video is in viewport and playing
+        const rect = video.getBoundingClientRect();
+        const inViewport = rect.top >= 0 && rect.bottom <= window.innerHeight && 
+                          rect.width > 0 && rect.height > 0;
+        
+        if (inViewport && !video.paused && video.readyState >= 2) {
+          targetVideo = video;
+          break;
+        }
+        
+        // Fallback: any video with valid src
+        if (!targetVideo && video.src) {
+          targetVideo = video;
+        }
+      }
+      
+      if (!targetVideo) {
+        throw new Error('No video element found');
+      }
+      
+      const src = targetVideo.src || targetVideo.querySelector('source')?.src;
+      console.log('[TikTok DL Injected] Video src:', src);
+      
+      if (!src) {
+        throw new Error('Video has no src');
+      }
+      
+      // If it's a blob URL, we need to capture the video directly
+      if (src.startsWith('blob:')) {
+        console.log('[TikTok DL Injected] Video uses blob URL, capturing directly...');
+        
+        // Use captureStream to get the video data
+        // First, try to find if we have the original URL stored
+        const originalUrl = blobToSourceMap.get(src);
+        if (originalUrl) {
+          console.log('[TikTok DL Injected] Found original URL for blob:', originalUrl);
+          window.dispatchEvent(new CustomEvent('tiktok-current-video-result', {
+            detail: { requestId, success: true, videoUrl: originalUrl, method: 'blob-map' }
+          }));
+          return;
+        }
+        
+        // Try to find URL in our seen videos map that matches this video ID
+        if (videoId && seenVideoUrls.has(videoId)) {
+          const storedUrl = seenVideoUrls.get(videoId);
+          console.log('[TikTok DL Injected] Found stored URL for video ID:', storedUrl);
+          window.dispatchEvent(new CustomEvent('tiktok-current-video-result', {
+            detail: { requestId, success: true, videoUrl: storedUrl, method: 'seen-map' }
+          }));
+          return;
+        }
+        
+        // As last resort, we can capture the video using MediaRecorder
+        // But this is slow and quality may vary - prefer URL method
+        throw new Error('Blob URL - no original source found. Try refreshing page.');
+        
+      } else {
+        // Direct URL - send it
+        console.log('[TikTok DL Injected] Direct video URL found');
+        window.dispatchEvent(new CustomEvent('tiktok-current-video-result', {
+          detail: { requestId, success: true, videoUrl: src, method: 'direct-src' }
+        }));
+      }
+      
+    } catch (error) {
+      console.error('[TikTok DL Injected] Get current video error:', error);
+      window.dispatchEvent(new CustomEvent('tiktok-current-video-result', {
+        detail: { requestId, success: false, error: error.message }
+      }));
+    }
+  });
+  
+  // ============ Track Video Element Sources ============
+  
+  // Watch for video elements being added and track their sources
+  function trackVideoElement(video) {
+    // Store original src when set
+    const originalSrcDescriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
+    if (originalSrcDescriptor && !video._tiktokTracked) {
+      video._tiktokTracked = true;
+      
+      // Watch for src changes
+      let lastSrc = video.src;
+      const checkSrc = () => {
+        if (video.src !== lastSrc) {
+          lastSrc = video.src;
+          console.log('[TikTok DL Injected] Video src changed:', video.src.substring(0, 100));
+          
+          // If it's a regular URL (not blob), store it
+          if (video.src && !video.src.startsWith('blob:')) {
+            // Try to extract video ID from current URL
+            const urlMatch = window.location.href.match(/\/video\/(\d+)/);
+            if (urlMatch) {
+              videoSourceMap.set(urlMatch[1], video.src);
+              console.log('[TikTok DL Injected] Stored video URL for ID:', urlMatch[1]);
+            }
+          }
+        }
+      };
+      
+      // Check periodically
+      const interval = setInterval(checkSrc, 500);
+      
+      // Clean up when video is removed
+      const observer = new MutationObserver((mutations) => {
+        if (!document.body.contains(video)) {
+          clearInterval(interval);
+          observer.disconnect();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+  
+  // Track existing videos
+  document.querySelectorAll('video').forEach(trackVideoElement);
+  
+  // Watch for new videos
+  const videoObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeName === 'VIDEO') {
+          trackVideoElement(node);
+        } else if (node.querySelectorAll) {
+          node.querySelectorAll('video').forEach(trackVideoElement);
+        }
+      }
+    }
+  });
+  videoObserver.observe(document.body, { childList: true, subtree: true });
+  
+  // Expose tracked data for debugging
+  window.__tiktokVideoSources = {
+    seenUrls: seenVideoUrls,
+    blobMap: blobToSourceMap,
+    videoSources: videoSourceMap
+  };
   
   console.log('TikTok Video Downloader: Interceptor injected');
 })();
