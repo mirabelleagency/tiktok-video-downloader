@@ -928,23 +928,37 @@ function getBestVideoUrl(video) {
 function deepSearchForVideoUrl(obj, targetVideoId, depth = 0, path = '') {
   if (depth > 15 || !obj || typeof obj !== 'object') return null;
   
-  // Check if this object has video properties
+  // Check if this object has video properties AND matching ID
   if (obj.video && typeof obj.video === 'object') {
-    if (!targetVideoId || obj.id === targetVideoId) {
-      console.log('[TikTok DL] Deep search found video object at:', path);
+    // CRITICAL: Always verify video ID matches if we have a targetVideoId
+    const objId = obj.id || obj.videoId || obj.video?.id;
+    if (targetVideoId && objId && objId !== targetVideoId) {
+      // ID mismatch - skip this object entirely
+      console.log('[TikTok DL] Deep search skipping - ID mismatch:', objId, 'vs', targetVideoId);
+      return null; // Don't search children either - wrong video context
+    }
+    
+    if (!targetVideoId || objId === targetVideoId) {
+      console.log('[TikTok DL] Deep search found matching video object at:', path);
       const url = getBestVideoUrl(obj.video);
       if (url) return url;
     }
   }
   
-  // Check for direct video URL properties
-  if (obj.downloadAddr) {
-    console.log('[TikTok DL] Deep search found downloadAddr at:', path);
-    return obj.downloadAddr;
-  }
-  if (obj.playAddr) {
-    console.log('[TikTok DL] Deep search found playAddr at:', path);
-    return obj.playAddr;
+  // Check for direct video URL properties - BUT only if we can verify ID or no target
+  // If we have targetVideoId but can't verify, don't return raw URLs
+  if (targetVideoId) {
+    // Don't return downloadAddr/playAddr without ID verification from deep search
+    // These could belong to wrong video
+  } else {
+    if (obj.downloadAddr) {
+      console.log('[TikTok DL] Deep search found downloadAddr at:', path);
+      return obj.downloadAddr;
+    }
+    if (obj.playAddr) {
+      console.log('[TikTok DL] Deep search found playAddr at:', path);
+      return obj.playAddr;
+    }
   }
   
   // Check arrays
