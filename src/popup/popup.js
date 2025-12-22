@@ -60,6 +60,9 @@ function setupEventListeners() {
   // Settings button
   document.getElementById('open-settings-btn')?.addEventListener('click', openSettings);
   
+  // Debug button
+  document.getElementById('show-debug-btn')?.addEventListener('click', showDebugOverlay);
+  
   // Listen for progress updates
   chrome.runtime.onMessage.addListener(handleProgressMessage);
 }
@@ -239,6 +242,22 @@ function openSettings() {
   chrome.runtime.openOptionsPage();
 }
 
+// Show debug overlay on TikTok page
+async function showDebugOverlay() {
+  if (!state.currentTab || !state.currentTab.url.includes('tiktok.com')) {
+    showToast('Please navigate to TikTok first', 'error');
+    return;
+  }
+  
+  try {
+    await chrome.tabs.sendMessage(state.currentTab.id, { type: 'SHOW_DEBUG' });
+    showToast('Debug overlay enabled', 'success');
+  } catch (error) {
+    console.error('[Popup] Show debug error:', error);
+    showToast('Failed to show debug overlay', 'error');
+  }
+}
+
 // Clear stats
 async function clearStats() {
   try {
@@ -415,3 +434,30 @@ function formatTimeAgo(timestamp) {
   return new Date(timestamp).toLocaleDateString();
 }
 
+// Show toast notification
+function showToast(message, type = 'info') {
+  // Create toast element
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: white;
+    font-size: 12px;
+    z-index: 9999;
+    animation: fadeIn 0.3s ease;
+    background: ${type === 'error' ? '#f87171' : type === 'success' ? '#4ade80' : '#60a5fa'};
+  `;
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'fadeOut 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}

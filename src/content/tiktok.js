@@ -20,6 +20,178 @@ const MESSAGE_TYPES = {
 // Current video data state
 let currentVideoData = null;
 let interceptedVideoUrls = new Map();
+let debugOverlay = null;
+let debugEnabled = false;
+
+// Debug overlay functions
+function createDebugOverlay() {
+  if (debugOverlay) return debugOverlay;
+  
+  debugOverlay = document.createElement('div');
+  debugOverlay.id = 'tiktok-dl-debug';
+  debugOverlay.innerHTML = `
+    <div class="tiktok-dl-debug-header">
+      <span>🔧 TikTok DL Debug</span>
+      <button id="tiktok-dl-debug-close">×</button>
+    </div>
+    <div class="tiktok-dl-debug-content">
+      <div class="tiktok-dl-debug-row">
+        <label>URL Video ID:</label>
+        <span id="debug-url-id">-</span>
+      </div>
+      <div class="tiktok-dl-debug-row">
+        <label>Current Data ID:</label>
+        <span id="debug-current-id">-</span>
+      </div>
+      <div class="tiktok-dl-debug-row">
+        <label>Intercepted IDs:</label>
+        <span id="debug-intercepted">-</span>
+      </div>
+      <div class="tiktok-dl-debug-row">
+        <label>URL Source:</label>
+        <span id="debug-source">-</span>
+      </div>
+      <div class="tiktok-dl-debug-row">
+        <label>Status:</label>
+        <span id="debug-status">Ready</span>
+      </div>
+      <div class="tiktok-dl-debug-log" id="debug-log"></div>
+    </div>
+  `;
+  
+  const style = document.createElement('style');
+  style.textContent = `
+    #tiktok-dl-debug {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 320px;
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid #FE2C55;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #fff;
+      z-index: 999999;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+    .tiktok-dl-debug-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: linear-gradient(135deg, #FE2C55, #25F4EE);
+      border-radius: 6px 6px 0 0;
+      font-weight: bold;
+    }
+    #tiktok-dl-debug-close {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+    .tiktok-dl-debug-content {
+      padding: 10px;
+    }
+    .tiktok-dl-debug-row {
+      display: flex;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 4px;
+    }
+    .tiktok-dl-debug-row label {
+      width: 110px;
+      color: #25F4EE;
+      flex-shrink: 0;
+    }
+    .tiktok-dl-debug-row span {
+      color: #fff;
+      word-break: break-all;
+    }
+    #debug-status { color: #4ade80; }
+    #debug-status.error { color: #f87171; }
+    #debug-status.warning { color: #fbbf24; }
+    .tiktok-dl-debug-log {
+      max-height: 150px;
+      overflow-y: auto;
+      background: #111;
+      padding: 6px;
+      border-radius: 4px;
+      margin-top: 8px;
+      font-size: 10px;
+    }
+    .tiktok-dl-debug-log div {
+      padding: 2px 0;
+      border-bottom: 1px solid #222;
+    }
+    .tiktok-dl-debug-log .info { color: #60a5fa; }
+    .tiktok-dl-debug-log .success { color: #4ade80; }
+    .tiktok-dl-debug-log .warn { color: #fbbf24; }
+    .tiktok-dl-debug-log .error { color: #f87171; }
+  `;
+  
+  document.head.appendChild(style);
+  document.body.appendChild(debugOverlay);
+  
+  document.getElementById('tiktok-dl-debug-close').onclick = () => {
+    debugOverlay.style.display = 'none';
+    debugEnabled = false;
+  };
+  
+  debugEnabled = true;
+  return debugOverlay;
+}
+
+function updateDebugOverlay(data = {}) {
+  if (!debugEnabled || !debugOverlay) return;
+  
+  const urlId = extractVideoIdFromUrl() || '-';
+  const currentId = currentVideoData?.videoId || '-';
+  const interceptedIds = Array.from(interceptedVideoUrls.keys()).join(', ') || 'none';
+  
+  document.getElementById('debug-url-id').textContent = urlId;
+  document.getElementById('debug-current-id').textContent = currentId;
+  document.getElementById('debug-intercepted').textContent = interceptedIds;
+  
+  if (data.source) {
+    document.getElementById('debug-source').textContent = data.source;
+  }
+  if (data.status) {
+    const statusEl = document.getElementById('debug-status');
+    statusEl.textContent = data.status;
+    statusEl.className = data.statusClass || '';
+  }
+}
+
+function debugLog(message, type = 'info') {
+  console.log(`[TikTok DL] ${message}`);
+  
+  if (!debugEnabled || !debugOverlay) return;
+  
+  const logEl = document.getElementById('debug-log');
+  if (logEl) {
+    const time = new Date().toLocaleTimeString();
+    const entry = document.createElement('div');
+    entry.className = type;
+    entry.textContent = `[${time}] ${message}`;
+    logEl.insertBefore(entry, logEl.firstChild);
+    
+    // Keep only last 50 entries
+    while (logEl.children.length > 50) {
+      logEl.removeChild(logEl.lastChild);
+    }
+  }
+}
+
+function showDebugOverlay() {
+  createDebugOverlay();
+  debugOverlay.style.display = 'block';
+  debugEnabled = true;
+  updateDebugOverlay();
+  debugLog('Debug overlay enabled', 'success');
+}
 
 // Initialize content script
 (function init() {
@@ -68,8 +240,8 @@ function injectInterceptor() {
 
 // Handle intercepted video URLs from injected script
 function handleInterceptedUrl(event) {
-  console.log('[TikTok DL] Intercepted video URL event:', event.detail);
   const { videoId, videoUrl, username, description } = event.detail;
+  debugLog(`Intercepted: ${videoId}`, 'success');
   
   if (videoId && videoUrl) {
     interceptedVideoUrls.set(videoId, {
@@ -77,28 +249,37 @@ function handleInterceptedUrl(event) {
       username: username || extractUsernameFromUrl(),
       description: description || ''
     });
-    console.log('[TikTok DL] Stored intercepted URL for video:', videoId);
+    debugLog(`Stored URL for video: ${videoId}`, 'info');
+    updateDebugOverlay();
     
     // Update current video data if this matches current page
     const pageVideoId = extractVideoIdFromUrl();
     if (pageVideoId === videoId) {
       updateCurrentVideoData(videoId, videoUrl, username, description);
+      debugLog(`Updated current video data`, 'success');
     }
   }
 }
 
 // Handle messages from popup/background
 function handleMessage(message, sender, sendResponse) {
-  console.log('[TikTok DL] Message received:', message.type);
+  debugLog(`Message: ${message.type}`, 'info');
   
   switch (message.type) {
     case MESSAGE_TYPES.GET_VIDEO_INFO:
       // ALWAYS force fresh detection - never use cache for download requests
-      console.log('[TikTok DL] Forcing fresh video detection...');
+      debugLog('Forcing fresh detection...', 'warn');
+      updateDebugOverlay({ status: 'Detecting...', statusClass: 'warning' });
       currentVideoData = null; // Clear any cached data
       
       detectVideo(true).then(videoData => {
-        console.log('[TikTok DL] Sending video data:', videoData);
+        if (videoData) {
+          debugLog(`Found video: ${videoData.videoId}`, 'success');
+          updateDebugOverlay({ status: 'Video found!', statusClass: '' });
+        } else {
+          debugLog('No video detected!', 'error');
+          updateDebugOverlay({ status: 'No video found', statusClass: 'error' });
+        }
         sendResponse(videoData ? 
           { success: true, videoData } : 
           { success: false, error: 'No video detected on this page' }
@@ -108,17 +289,30 @@ function handleMessage(message, sender, sendResponse) {
     
     case 'FETCH_VIDEO':
       // Fetch video from content script context (bypasses CORS)
-      console.log('[TikTok DL] Fetching video via content script:', message.videoUrl);
+      debugLog('Fetching video...', 'info');
+      updateDebugOverlay({ status: 'Downloading...', statusClass: 'warning' });
       fetchVideoAsBase64(message.videoUrl).then(result => {
+        if (result.success) {
+          debugLog('Video fetched successfully', 'success');
+          updateDebugOverlay({ status: 'Fetched!', statusClass: '' });
+        } else {
+          debugLog(`Fetch failed: ${result.error}`, 'error');
+          updateDebugOverlay({ status: 'Fetch failed', statusClass: 'error' });
+        }
         sendResponse(result);
       }).catch(error => {
-        console.error('[TikTok DL] Video fetch error:', error);
+        debugLog(`Fetch error: ${error.message}`, 'error');
         sendResponse({ success: false, error: error.message });
       });
       return true;
     
+    case 'SHOW_DEBUG':
+      showDebugOverlay();
+      sendResponse({ success: true });
+      return true;
+    
     case MESSAGE_TYPES.DOWNLOAD_PROGRESS:
-      console.log(`[TikTok DL] Download progress: ${message.percent}% - ${message.message}`);
+      debugLog(`Progress: ${message.percent}%`, 'info');
       break;
   }
 }
@@ -303,55 +497,66 @@ async function detectFeedVideo() {
 
 // Get video URL from various sources
 async function getVideoUrl(videoId) {
-  console.log('[TikTok DL] Getting URL for video:', videoId);
+  debugLog(`Getting URL for: ${videoId}`, 'info');
+  updateDebugOverlay({ status: 'Searching...', statusClass: 'warning' });
   
   // Priority 1: Check intercepted URLs (most reliable - captured from actual API calls)
   if (interceptedVideoUrls.has(videoId)) {
-    console.log('[TikTok DL] Found in intercepted URLs');
+    debugLog('Source: Intercepted URLs ✓', 'success');
+    updateDebugOverlay({ source: 'Intercepted (XHR/Fetch)', status: 'Found!', statusClass: '' });
     return interceptedVideoUrls.get(videoId).videoUrl;
   }
   
   // Priority 2: Wait briefly for intercepted URL (TikTok might still be loading)
-  // This is key - when scrolling, TikTok makes an API call we should intercept
-  console.log('[TikTok DL] Waiting for intercepted URL...');
+  debugLog('Waiting for intercepted URL (3s)...', 'warn');
+  updateDebugOverlay({ source: 'Waiting for intercept...', status: 'Waiting...', statusClass: 'warning' });
   const waitedUrl = await waitForInterceptedUrl(videoId, 3000);
   if (waitedUrl) {
+    debugLog('Source: Waited Intercepted ✓', 'success');
+    updateDebugOverlay({ source: 'Intercepted (waited)', status: 'Found!', statusClass: '' });
     return waitedUrl;
   }
   
   // Priority 3: Try to find video URL in the current video's container data attributes
+  debugLog('Trying container data...', 'info');
   const containerUrl = extractUrlFromVideoContainer(videoId);
   if (containerUrl) {
-    console.log('[TikTok DL] Found in video container');
+    debugLog('Source: Container Data ✓', 'success');
+    updateDebugOverlay({ source: 'Container Data', status: 'Found!', statusClass: '' });
     return containerUrl;
   }
   
   // Priority 4: Extract from page data (with strict video ID verification)
-  // Only use if it matches the exact video ID we're looking for
+  debugLog('Trying page data...', 'info');
   const pageDataResult = extractFromPageData(videoId);
   if (pageDataResult) {
-    console.log('[TikTok DL] Found in page data');
+    debugLog('Source: Page Data ✓', 'success');
+    updateDebugOverlay({ source: 'Page Data (JSON)', status: 'Found!', statusClass: '' });
     return pageDataResult;
   }
   
   // Priority 5: Get from video element source (last resort)
+  debugLog('Trying video element...', 'info');
   const videoElement = document.querySelector('video');
   if (videoElement) {
     // Check src attribute
     if (videoElement.src && !videoElement.src.startsWith('blob:')) {
-      console.log('[TikTok DL] Found video src:', videoElement.src);
+      debugLog('Source: Video Element ✓', 'success');
+      updateDebugOverlay({ source: 'Video Element src', status: 'Found!', statusClass: '' });
       return videoElement.src;
     }
     
     // Check source elements
     const sourceEl = videoElement.querySelector('source');
     if (sourceEl && sourceEl.src && !sourceEl.src.startsWith('blob:')) {
-      console.log('[TikTok DL] Found source element:', sourceEl.src);
+      debugLog('Source: Source Element ✓', 'success');
+      updateDebugOverlay({ source: 'Source Element', status: 'Found!', statusClass: '' });
       return sourceEl.src;
     }
   }
   
-  console.log('[TikTok DL] No video URL found');
+  debugLog('NO URL FOUND!', 'error');
+  updateDebugOverlay({ source: 'None - All failed', status: 'NOT FOUND', statusClass: 'error' });
   return null;
 }
 
@@ -912,7 +1117,13 @@ window.__tiktokDownloader = {
   detectVideo,
   getInterceptedUrls: () => interceptedVideoUrls,
   extractFromPageData,
-  getVideoUrl
+  getVideoUrl,
+  showDebug: showDebugOverlay,
+  debug: () => {
+    showDebugOverlay();
+    return 'Debug overlay enabled!';
+  }
 };
 
 console.log('[TikTok DL] Debug: window.__tiktokDownloader available');
+console.log('[TikTok DL] Tip: Run __tiktokDownloader.debug() in console to show debug overlay');
