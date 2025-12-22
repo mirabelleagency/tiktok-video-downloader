@@ -52,9 +52,12 @@ async function handleMessage(message, sender) {
       tabId = tabs[0].id;
     }
   }
-  console.log('[SW] Handling message:', message.type, 'tabId:', tabId);
+  console.log('[SW] Handling message:', message.type || message.action, 'tabId:', tabId);
   
-  switch (message.type) {
+  // Support both 'type' (popup) and 'action' (options) message formats
+  const messageType = message.type || message.action;
+  
+  switch (messageType) {
     case MESSAGE_TYPES.AUTHENTICATE:
       return await authenticate();
     
@@ -86,6 +89,7 @@ async function handleMessage(message, sender) {
       return await setTargetSpreadsheet(message.data);
     
     default:
+      console.log('[SW] Unknown message type:', messageType);
       return { success: false, error: 'Unknown message type' };
   }
 }
