@@ -1,0 +1,588 @@
+/**
+ * TikTok Video Downloader - Popup Styles
+ * Modern, clean UI with TikTok-inspired colors
+ */
+
+/* ============================================================================
+   CSS Variables
+   ============================================================================ */
+
+:root {
+  /* TikTok Colors */
+  --primary: #FE2C55;
+  --primary-dark: #E91E4D;
+  --primary-light: #FF3B5C;
+  --secondary: #25F4EE;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  --info: #3b82f6;
+  
+  /* Neutrals */
+  --white: #ffffff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+}
+
+/* ============================================================================
+   Base Styles
+   ============================================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--gray-800);
+  background: var(--white);
+  width: 320px;
+  min-height: 400px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ============================================================================
+   Popup Container
+   ============================================================================ */
+
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+/* ============================================================================
+   Header
+   ============================================================================ */
+
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, #000000 100%);
+  color: var(--white);
+  padding: var(--space-lg) var(--space-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.header h1 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(90deg, #fff 0%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ============================================================================
+   Sections
+   ============================================================================ */
+
+.section {
+  padding: var(--space-lg);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================================================
+   Auth Section
+   ============================================================================ */
+
+.auth-section {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-xl);
+}
+
+.auth-message {
+  color: var(--gray-600);
+}
+
+.auth-message p {
+  margin-bottom: var(--space-sm);
+}
+
+/* ============================================================================
+   Buttons
+   ============================================================================ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Button Variants */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+}
+
+.btn-secondary {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+
+.btn-secondary:hover {
+  background: var(--gray-200);
+}
+
+.btn-link {
+  background: transparent;
+  color: var(--gray-600);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.btn-link:hover {
+  color: var(--primary);
+  background: var(--gray-50);
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-danger {
+  color: var(--error);
+}
+
+.btn-danger:hover {
+  color: var(--error);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.btn-large {
+  padding: var(--space-md) var(--space-xl);
+  font-size: 15px;
+}
+
+/* Button Icons */
+.btn-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.btn-icon-small {
+  width: 14px;
+  height: 14px;
+}
+
+.google-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* ============================================================================
+   Status Bar
+   ============================================================================ */
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--gray-400);
+}
+
+.status-indicator.online {
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+}
+
+.status-indicator.offline {
+  background: var(--gray-400);
+}
+
+.status-indicator.busy {
+  background: var(--warning);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+#status-text {
+  font-size: 13px;
+  color: var(--gray-600);
+}
+
+#status-text.success {
+  color: var(--success);
+}
+
+#status-text.error {
+  color: var(--error);
+}
+
+#status-text.info {
+  color: var(--info);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ============================================================================
+   Quick Actions
+   ============================================================================ */
+
+.quick-actions {
+  margin-bottom: var(--space-lg);
+}
+
+.quick-actions .btn {
+  width: 100%;
+}
+
+/* ============================================================================
+   Progress Section
+   ============================================================================ */
+
+.progress-section {
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+  border: 1px solid var(--gray-200);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+#progress-status {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-700);
+}
+
+.progress-bar-container {
+  height: 8px;
+  background: var(--gray-200);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-xs);
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.progress-details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--gray-500);
+}
+
+#progress-percentage {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+/* ============================================================================
+   Stats Card
+   ============================================================================ */
+
+.stats-card {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  align-items: center;
+}
+
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-md);
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Icon-only buttons */
+.btn-icon-only {
+  padding: var(--space-sm);
+  min-width: auto;
+  border-radius: var(--radius-md);
+  background: var(--gray-100);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+
+.btn-icon-only:hover {
+  background: var(--gray-200);
+}
+
+.btn-icon-only.btn-danger {
+  color: var(--error);
+}
+
+.btn-icon-only.btn-danger:hover {
+  background: var(--error);
+  color: white;
+}
+
+.btn-small {
+  padding: 6px;
+}
+
+.btn-small .btn-icon-small {
+  width: 14px;
+  height: 14px;
+}
+
+/* ============================================================================
+   Recent Activity
+   ============================================================================ */
+
+.recent-activity {
+  flex: 1;
+  margin-bottom: var(--space-lg);
+}
+
+.recent-activity h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--space-sm);
+}
+
+.activity-list {
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+  font-size: 13px;
+  color: var(--gray-600);
+}
+
+.activity-item + .activity-item {
+  border-top: 1px solid var(--gray-200);
+  padding-top: var(--space-sm);
+  margin-top: var(--space-xs);
+}
+
+.activity-icon {
+  font-size: 16px;
+}
+
+.activity-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-username {
+  font-weight: 500;
+  color: var(--gray-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.activity-time {
+  font-size: 11px;
+  color: var(--gray-400);
+}
+
+.empty-state {
+  color: var(--gray-400);
+  text-align: center;
+  font-size: 13px;
+}
+
+/* ============================================================================
+   Footer Actions
+   ============================================================================ */
+
+.footer-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--gray-200);
+}
+
+/* ============================================================================
+   Loading Overlay
+   ============================================================================ */
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  z-index: 1000;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+#loading-text {
+  color: var(--gray-600);
+  font-size: 14px;
+}
+
+/* ============================================================================
+   Scrollbar
+   ============================================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}

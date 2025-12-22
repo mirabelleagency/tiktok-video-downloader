@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://www.googleapis.com https://sheets.googleapis.com;">
+  <title>TikTok Video Downloader - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <img src="../icons/icon48.png" alt="Logo" class="logo">
+        <div class="header-text">
+          <h1>TikTok Video Downloader</h1>
+          <p>Settings & Configuration</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Google Drive Settings -->
+      <section class="settings-section">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          Google Drive
+        </h2>
+        
+        <div class="setting-item">
+          <label for="drive-folder">Folder Name</label>
+          <input type="text" id="drive-folder" placeholder="TikTok Downloads">
+          <p class="setting-help">Videos will be saved to this folder in your Google Drive</p>
+        </div>
+      </section>
+
+      <!-- Google Sheets Settings -->
+      <section class="settings-section">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+          Google Sheets
+        </h2>
+        
+        <div class="setting-item">
+          <label for="sheets-name">Spreadsheet Name</label>
+          <input type="text" id="sheets-name" placeholder="TikTok Download Log">
+          <p class="setting-help">Download logs will be recorded in this spreadsheet</p>
+        </div>
+
+        <div class="setting-item">
+          <label>Select Existing Spreadsheet</label>
+          <div class="spreadsheet-picker">
+            <select id="spreadsheet-select" disabled>
+              <option value="">-- Select a spreadsheet --</option>
+            </select>
+            <button id="refresh-spreadsheets" class="btn btn-icon" title="Refresh list">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+            </button>
+          </div>
+          <p class="setting-help">Choose an existing spreadsheet from your Google Drive</p>
+        </div>
+
+        <div class="setting-item">
+          <label>Current Spreadsheet</label>
+          <div class="current-sheet-info" id="current-sheet-info">
+            <span class="not-set">No spreadsheet selected</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Notifications -->
+      <section class="settings-section">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          Notifications
+        </h2>
+        
+        <div class="setting-item checkbox-item">
+          <label>
+            <input type="checkbox" id="show-notifications" checked>
+            <span class="checkbox-label">Show notifications</span>
+          </label>
+          <p class="setting-help">Display browser notifications when downloads complete</p>
+        </div>
+      </section>
+
+      <!-- Account Section -->
+      <section class="settings-section">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          Account
+        </h2>
+        
+        <div class="account-info" id="account-info">
+          <p class="not-signed-in">Not signed in</p>
+        </div>
+        
+        <div class="account-actions">
+          <button id="sign-out-btn" class="btn btn-secondary" style="display: none;">
+            Sign Out
+          </button>
+        </div>
+      </section>
+
+      <!-- About Section -->
+      <section class="settings-section">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          About
+        </h2>
+        
+        <div class="about-info">
+          <p><strong>Version:</strong> <span id="version">1.0.0</span></p>
+          <p><strong>Developer:</strong> Mirabelle Agency</p>
+          <p><strong>Internal Use Only</strong></p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <button id="save-btn" class="btn btn-primary">Save Settings</button>
+      <button id="reset-btn" class="btn btn-secondary">Reset to Defaults</button>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden">
+      <span id="toast-message"></span>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
