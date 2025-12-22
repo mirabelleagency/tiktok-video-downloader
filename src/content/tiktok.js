@@ -287,6 +287,26 @@ function handleMessage(message, sender, sendResponse) {
       });
       return true;
     
+    case 'GET_VIDEO_INFO_FRESH':
+      // Get fresh video data by fetching page data directly
+      debugLog('Getting fresh video data...', 'warn');
+      updateDebugOverlay({ status: 'Fetching fresh...', statusClass: 'warning' });
+      
+      getFreshVideoData().then(videoData => {
+        if (videoData) {
+          debugLog(`Fresh video found: ${videoData.videoId}`, 'success');
+          updateDebugOverlay({ status: 'Fresh data found!', statusClass: '' });
+        } else {
+          debugLog('Fresh fetch failed!', 'error');
+          updateDebugOverlay({ status: 'Fresh fetch failed', statusClass: 'error' });
+        }
+        sendResponse(videoData ? 
+          { success: true, videoData } : 
+          { success: false, error: 'Could not fetch fresh video data' }
+        );
+      });
+      return true;
+    
     case 'FETCH_VIDEO':
       // Fetch video from content script context (bypasses CORS)
       debugLog('Fetching video...', 'info');
@@ -568,6 +588,92 @@ async function getVideoUrl(videoId) {
   debugLog('NO URL FOUND!', 'error');
   updateDebugOverlay({ source: 'None - All failed', status: 'NOT FOUND', statusClass: 'error' });
   return null;
+}
+
+// Get FRESH video data by fetching the current page directly
+// This bypasses any caching issues by making a fresh request
+async function getFreshVideoData() {
+  try {
+    const videoId = getVideoIdFromUrl();
+    if (!videoId) {
+      debugLog('No video ID in URL for fresh fetch', 'error');
+      return null;
+    }
+    
+    debugLog(`Getting fresh data for: ${videoId}`, 'info');
+    
+    // Fetch the current page fresh
+    const response = await fetch(window.location.href, {
+      credentials: 'include',
+      headers: {
+        'Accept': 'text/html'
+      },
+      cache: 'no-cache' // Force fresh request
+    });
+    
+    if (!response.ok) {
+      debugLog(`Fresh fetch failed: ${response.status}`, 'error');
+      return null;
+    }
+    
+    const html = await response.text();
+    debugLog(`Fresh HTML received: ${html.length} chars`, 'info');
+    
+    // Parse the fresh HTML for video data
+    const match = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([^<]+)<\/script>/);
+    if (!match) {
+      debugLog('No rehydration data in fresh HTML', 'error');
+      return null;
+    }
+    
+    const data = JSON.parse(match[1]);
+    const videoDetail = data?.__DEFAULT_SCOPE__?.['webapp.video-detail'];
+    
+    if (!videoDetail?.itemInfo?.itemStruct) {
+      debugLog('No video item in fresh data', 'error');
+      return null;
+    }
+    
+    const item = videoDetail.itemInfo.itemStruct;
+    const video = item.video;
+    const author = item.author;
+    
+    // Get video URL
+    const videoUrl = video?.downloadAddr || video?.playAddr;
+    if (!videoUrl) {
+      debugLog('No video URL in fresh data', 'error');
+      return null;
+    }
+    
+    // Verify the video ID matches
+    if (item.id !== videoId) {
+      debugLog(`ID mismatch! Fresh: ${item.id}, Expected: ${videoId}`, 'error');
+      return null;
+    }
+    
+    debugLog(`Fresh video URL obtained for ${videoId}!`, 'success');
+    
+    // Update our cache with fresh data
+    interceptedVideoUrls.set(videoId, {
+      videoUrl: videoUrl,
+      username: author?.uniqueId || '',
+      description: item.desc || ''
+    });
+    
+    // Build and return complete video data object
+    return {
+      videoId: videoId,
+      videoUrl: videoUrl,
+      username: author?.uniqueId || extractUsernameFromUrl() || 'unknown',
+      description: item.desc || '',
+      timestamp: new Date().toISOString(),
+      pageUrl: window.location.href
+    };
+    
+  } catch (error) {
+    debugLog(`Fresh fetch error: ${error.message}`, 'error');
+    return null;
+  }
 }
 
 // Fetch video URL directly from TikTok's API

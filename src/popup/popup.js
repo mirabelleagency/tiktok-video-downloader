@@ -150,10 +150,20 @@ async function handleDownload() {
   showProgress('Detecting video...');
   
   try {
-    // Get video info from content script
-    const videoInfo = await chrome.tabs.sendMessage(state.currentTab.id, {
+    // First try: Get video info from content script (cached/intercepted data)
+    let videoInfo = await chrome.tabs.sendMessage(state.currentTab.id, {
       type: 'GET_VIDEO_INFO'
     });
+    
+    // If first try fails, try getting FRESH data (bypasses caching issues)
+    if (!videoInfo?.success || !videoInfo?.videoData) {
+      console.log('[Popup] First detection failed, trying fresh fetch...');
+      showProgress('Fetching fresh data...');
+      
+      videoInfo = await chrome.tabs.sendMessage(state.currentTab.id, {
+        type: 'GET_VIDEO_INFO_FRESH'
+      });
+    }
     
     if (!videoInfo?.success || !videoInfo?.videoData) {
       showStatus('No video found on this page', 'error');
