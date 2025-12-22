@@ -60,9 +60,6 @@ function setupEventListeners() {
   // Settings button
   document.getElementById('open-settings-btn')?.addEventListener('click', openSettings);
   
-  // Debug button
-  document.getElementById('show-debug-btn')?.addEventListener('click', showDebugOverlay);
-  
   // Listen for progress updates
   chrome.runtime.onMessage.addListener(handleProgressMessage);
 }
@@ -250,22 +247,6 @@ async function openSheets() {
 // Open Settings page
 function openSettings() {
   chrome.runtime.openOptionsPage();
-}
-
-// Show debug overlay on TikTok page
-async function showDebugOverlay() {
-  if (!state.currentTab || !state.currentTab.url.includes('tiktok.com')) {
-    showToast('Please navigate to TikTok first', 'error');
-    return;
-  }
-  
-  try {
-    await chrome.tabs.sendMessage(state.currentTab.id, { type: 'SHOW_DEBUG' });
-    showToast('Debug overlay enabled', 'success');
-  } catch (error) {
-    console.error('[Popup] Show debug error:', error);
-    showToast('Failed to show debug overlay', 'error');
-  }
 }
 
 // Clear stats
