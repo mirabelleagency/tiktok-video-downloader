@@ -575,41 +575,77 @@ async function fetchVideoUrlFromApi(videoId) {
   try {
     debugLog(`Fetching API for video: ${videoId}`, 'info');
     
-    // Try TikTok's detail API endpoint
-    const apiUrl = `https://www.tiktok.com/api/item/detail/?itemId=${videoId}`;
-    
-    const response = await fetch(apiUrl, {
-      credentials: 'include',
-      headers: {
-        'Accept': 'application/json'
+    // Method 1: Try TikTok's detail API endpoint
+    try {
+      const apiUrl = `https://www.tiktok.com/api/item/detail/?itemId=${videoId}`;
+      const response = await fetch(apiUrl, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        debugLog('API response received', 'info');
+        
+        if (data?.itemInfo?.itemStruct?.video) {
+          const video = data.itemInfo.itemStruct.video;
+          const url = video.downloadAddr || video.playAddr;
+          if (url) {
+            debugLog('Got URL from API!', 'success');
+            interceptedVideoUrls.set(videoId, {
+              videoUrl: url,
+              username: data.itemInfo.itemStruct.author?.uniqueId || '',
+              description: data.itemInfo.itemStruct.desc || ''
+            });
+            return url;
+          }
+        }
       }
-    });
-    
-    if (!response.ok) {
-      debugLog(`API response not OK: ${response.status}`, 'warn');
-      return null;
+    } catch (e) {
+      debugLog(`API method 1 failed: ${e.message}`, 'warn');
     }
     
-    const data = await response.json();
-    debugLog('API response received', 'info');
-    
-    // Extract video URL from response
-    if (data?.itemInfo?.itemStruct?.video) {
-      const video = data.itemInfo.itemStruct.video;
-      const url = video.downloadAddr || video.playAddr;
-      if (url) {
-        debugLog('Got URL from API', 'success');
-        // Also store it for future use
-        interceptedVideoUrls.set(videoId, {
-          videoUrl: url,
-          username: data.itemInfo.itemStruct.author?.uniqueId || '',
-          description: data.itemInfo.itemStruct.desc || ''
-        });
-        return url;
+    // Method 2: Fetch the video page HTML and parse
+    try {
+      debugLog('Trying page fetch method...', 'info');
+      const pageUrl = `https://www.tiktok.com/@${extractUsernameFromUrl()}/video/${videoId}`;
+      const response = await fetch(pageUrl, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'text/html'
+        }
+      });
+      
+      if (response.ok) {
+        const html = await response.text();
+        
+        // Look for __UNIVERSAL_DATA_FOR_REHYDRATION__ in the HTML
+        const match = html.match(/<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([^<]+)<\/script>/);
+        if (match) {
+          const data = JSON.parse(match[1]);
+          const videoDetail = data?.__DEFAULT_SCOPE__?.['webapp.video-detail'];
+          if (videoDetail?.itemInfo?.itemStruct?.video) {
+            const video = videoDetail.itemInfo.itemStruct.video;
+            const url = video.downloadAddr || video.playAddr;
+            if (url) {
+              debugLog('Got URL from page fetch!', 'success');
+              interceptedVideoUrls.set(videoId, {
+                videoUrl: url,
+                username: videoDetail.itemInfo.itemStruct.author?.uniqueId || '',
+                description: videoDetail.itemInfo.itemStruct.desc || ''
+              });
+              return url;
+            }
+          }
+        }
       }
+    } catch (e) {
+      debugLog(`Page fetch method failed: ${e.message}`, 'warn');
     }
     
-    debugLog('No video in API response', 'warn');
+    debugLog('All API methods failed', 'error');
     return null;
   } catch (error) {
     debugLog(`API fetch error: ${error.message}`, 'error');
