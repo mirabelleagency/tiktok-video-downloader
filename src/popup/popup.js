@@ -34,8 +34,6 @@ const state = {
 
 // Initialize popup
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('[Popup] Initializing...');
-  
   // Get current tab
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
   state.currentTab = tabs[0];
@@ -43,8 +41,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Check auth and initialize
   await checkAuth();
   setupEventListeners();
-  
-  console.log('[Popup] Initialized');
 });
 
 // Setup event listeners
@@ -81,7 +77,6 @@ async function checkAuth() {
       showAuthSection();
     }
   } catch (error) {
-    console.error('[Popup] Auth check failed:', error);
     showAuthSection();
   }
   
@@ -90,7 +85,6 @@ async function checkAuth() {
 
 // Handle sign in
 async function handleSignIn() {
-  console.log('[Popup] Sign in clicked');
   showLoading('Signing in with Google...');
   
   try {
@@ -106,7 +100,6 @@ async function handleSignIn() {
       showStatus('Sign in failed: ' + (result.error || 'Unknown error'), 'error');
     }
   } catch (error) {
-    console.error('[Popup] Sign in error:', error);
     showStatus('Sign in failed: ' + error.message, 'error');
   }
   
@@ -123,7 +116,6 @@ async function handleSignOut() {
     showAuthSection();
     showStatus('Signed out', 'info');
   } catch (error) {
-    console.error('[Popup] Sign out failed:', error);
     showStatus('Sign out failed', 'error');
   }
   
@@ -154,7 +146,6 @@ async function handleDownload() {
     
     // If first try fails, try getting FRESH data (bypasses caching issues)
     if (!videoInfo?.success || !videoInfo?.videoData) {
-      console.log('[Popup] First detection failed, trying fresh fetch...');
       showProgress('Fetching fresh data...');
       
       videoInfo = await chrome.tabs.sendMessage(state.currentTab.id, {
@@ -195,7 +186,6 @@ async function handleDownload() {
       showStatus('Download failed: ' + result.error, 'error');
     }
   } catch (error) {
-    console.error('[Popup] Download failed:', error);
     showStatus('Download failed - make sure you are on a video page', 'error');
   }
   
@@ -258,7 +248,7 @@ async function clearStats() {
     elements.totalDownloads.textContent = '0';
     elements.totalUploads.textContent = '0';
   } catch (error) {
-    console.error('[Popup] Clear stats failed:', error);
+    // Stats clear failed
   }
 }
 
@@ -310,7 +300,7 @@ async function loadStats() {
     elements.totalDownloads.textContent = stats.totalDownloads || 0;
     elements.totalUploads.textContent = stats.totalUploads || 0;
   } catch (error) {
-    console.error('[Popup] Load stats failed:', error);
+    // Stats load failed
   }
 }
 
@@ -343,7 +333,6 @@ async function loadRecentActivity() {
       elements.activityList.innerHTML = '<p class="empty-state">No downloads yet</p>';
     }
   } catch (error) {
-    console.error('[Popup] Load activity failed:', error);
     elements.activityList.innerHTML = '<p class="empty-state">No downloads yet</p>';
   }
 }
