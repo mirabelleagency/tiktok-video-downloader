@@ -91,6 +91,10 @@ TikTok Video Downloader is a Chrome extension that allows users to download TikT
 | **Service Worker** | `src/background/service-worker.js` | Handles auth, downloads, uploads, and logging |
 | **Options** | `src/options/*` | Extension settings configuration |
 | **Constants** | `src/utils/constants.js` | Shared configuration values |
+| **Validation** | `src/utils/validation.js` | Input validation and sanitization |
+| **Errors** | `src/utils/errors.js` | Error codes, messages, and recovery hints |
+| **Retry** | `src/utils/retry.js` | Exponential backoff retry logic |
+| **Network** | `src/utils/network.js` | Offline detection and network monitoring |
 
 ### Data Flow
 
@@ -392,9 +396,11 @@ tiktok-video-downloader/
 ├── package.json               # Node.js dependencies
 ├── webpack.config.js          # Build configuration
 ├── jest.config.js             # Test configuration
+├── .eslintrc.json             # ESLint configuration
 ├── README.md                  # Quick start guide
 ├── SETUP-GUIDE.md             # Detailed setup instructions
 ├── DOCUMENTATION-GUIDE.md     # This file
+├── ASSESSMENT-GUIDE.md        # Extension assessment & recommendations
 │
 ├── assets/
 │   └── icons/
@@ -422,7 +428,11 @@ tiktok-video-downloader/
 │   │   └── options.css        # Options styling
 │   │
 │   └── utils/
-│       └── constants.js       # Shared constants
+│       ├── constants.js       # Shared constants
+│       ├── validation.js      # Input validation utilities
+│       ├── errors.js          # Error codes and messages
+│       ├── retry.js           # Retry with exponential backoff
+│       └── network.js         # Offline detection utilities
 │
 ├── scripts/
 │   ├── create-icons.js        # Icon generation utility
@@ -430,7 +440,15 @@ tiktok-video-downloader/
 │   └── generate_key.py        # Extension key generator
 │
 ├── tests/
-│   └── tiktok.test.js         # Unit tests
+│   ├── mocks/
+│   │   └── chrome.mock.js     # Chrome API mocks
+│   ├── tiktok.test.js         # TikTok content script tests
+│   ├── validation.test.js     # Validation utility tests
+│   ├── errors.test.js         # Error definitions tests
+│   ├── service-worker.test.js # Service worker tests
+│   ├── popup.test.js          # Popup logic tests
+│   ├── retry.test.js          # Retry utility tests
+│   └── network.test.js        # Network utility tests
 │
 └── release/
     └── ...                    # Production build output
