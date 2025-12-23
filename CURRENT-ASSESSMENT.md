@@ -1,6 +1,6 @@
 # TikTok Video Downloader - Updated Assessment
 
-> **Assessment Date:** Post-Gap Coverage Phase  
+> **Assessment Date:** Post-FYP Fix Phase  
 > **Version:** 1.0.0 (Enhanced)  
 > **Overall Rating:** ⭐⭐⭐⭐⭐ (4.8/5.0 - Excellent)
 
@@ -13,11 +13,13 @@ The TikTok Video Downloader Chrome extension has been significantly enhanced wit
 - Structured error handling with recovery hints (errors.js)
 - Retry mechanism with exponential backoff (retry.js)
 - Network connectivity detection (network.js)
-- **Rate limiting utilities (ratelimit.js)** ✨ NEW
+- **Rate limiting utilities (ratelimit.js)**
 - Accessibility improvements (ARIA labels)
-- **Robust test suite (187 tests passing)** ✨ IMPROVED
-- **Content Security Policy** ✨ NEW
+- **Robust test suite (188 tests passing)**
+- **Content Security Policy**
 - Copyright-free icon design
+- **For You Page (FYP) video detection** ✨ NEW
+- **Video description logging to Google Sheets** ✨ NEW
 
 ---
 
@@ -40,7 +42,7 @@ The TikTok Video Downloader Chrome extension has been significantly enhanced wit
 
 ### Test Coverage
 ```
-Tests:       187 passed, 187 total
+Tests:       188 passed, 188 total
 Test Files:  10 (tiktok, validation, errors, service-worker, popup, 
              retry, network, options, content, ratelimit)
 ```
@@ -111,12 +113,21 @@ src/
 - [x] Simplified build process
 - [x] Copyright-free icon design
 
-### Gap Coverage Phase ✅ (NEW)
+### Gap Coverage Phase ✅
 - [x] Rate limiting utilities (token bucket algorithm)
 - [x] Content script tests (44 tests)
 - [x] Options page tests (30 tests)
 - [x] Rate limiter tests (21 tests)
 - [x] Content Security Policy in manifest
+
+### FYP & Feature Enhancements ✅ (NEW)
+- [x] Fixed For You Page (FYP) video detection
+- [x] URL pattern matches root URL (tiktok.com/)
+- [x] Video ID extraction from xgwrapper elements
+- [x] TikTok internal store searching for video URLs
+- [x] Added Description column to Google Sheets
+- [x] Chrome Web Store submission assets
+- [x] Privacy policy and terms of service docs
 
 ---
 
@@ -243,8 +254,25 @@ tests/
 ├── tiktok.test.js           (5,377 bytes - 11 tests)
 └── validation.test.js       (5,556 bytes - 24 tests)
 
-Total: 187 tests passing
+Total: 188 tests passing
 ```
+
+---
+
+## Recent Changes Summary
+
+### For You Page Detection Fix
+- **Problem:** Extension didn't detect videos on FYP (https://www.tiktok.com/)
+- **Root Cause:** URL pattern `/tiktok\.com\/foryou/` didn't match root URL
+- **Solution:** 
+  - Updated pattern to `/(foryou)?(\?.*)?$/` to match both `/foryou` and `/`
+  - Added xgwrapper element ID parsing (`xgwrapper-{N}-{VIDEO_ID}`)
+  - Added TikTok internal store searching in injected.js
+
+### Google Sheets Enhancement
+- Added "Description" column between Username and Status
+- Columns now: Timestamp | TikTok URL | Drive Link | File Name | Username | Description | Status
+- Description cleaned (newlines removed, max 500 chars)
 
 ---
 

@@ -11,7 +11,8 @@ Download TikTok videos directly to Google Drive with automatic logging to Google
 - 📱 **Multiple URL Support**: Works with standard videos, short URLs, and feed videos
 - 🔒 **Security**: Input validation, URL sanitization, Content Security Policy
 - 🔄 **Reliability**: Retry mechanism with exponential backoff, network detection
-- ✅ **Tested**: 187 tests covering all major functionality
+- ✅ **Tested**: 188 tests covering all major functionality
+- 🏠 **For You Page Support**: Downloads from FYP and homepage ✨ NEW
 
 ## Installation
 
@@ -77,7 +78,7 @@ tiktok-video-downloader/
 │       ├── retry.js             # Retry with exponential backoff
 │       ├── network.js           # Connectivity detection
 │       └── ratelimit.js         # API rate limiting
-├── tests/                       # 187 tests
+├── tests/                       # 188 tests
 ├── assets/icons/                # Extension icons
 ├── manifest.json                # MV3 manifest
 └── package.json
@@ -94,8 +95,8 @@ tiktok-video-downloader/
 
 ## Google Sheets Log Format
 
-| Timestamp | TikTok URL | Drive Link | File Name | Username | Status |
-|-----------|------------|------------|-----------|----------|--------|
+| Timestamp | TikTok URL | Drive Link | File Name | Username | Description | Status |
+|-----------|------------|------------|-----------|----------|-------------|--------|
 
 ## Development
 
