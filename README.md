@@ -9,6 +9,9 @@ Download TikTok videos directly to Google Drive with automatic logging to Google
 - 📊 **Automatic Logging**: All downloads are logged to Google Sheets
 - 🎨 **TikTok-Inspired UI**: Clean, dark interface with TikTok's color scheme
 - 📱 **Multiple URL Support**: Works with standard videos, short URLs, and feed videos
+- 🔒 **Security**: Input validation, URL sanitization, Content Security Policy
+- 🔄 **Reliability**: Retry mechanism with exponential backoff, network detection
+- ✅ **Tested**: 187 tests covering all major functionality
 
 ## Installation
 
@@ -60,17 +63,24 @@ tiktok-video-downloader/
 │   │   ├── tiktok.js            # Video detection & extraction
 │   │   └── injected.js          # XHR/Fetch interceptor
 │   ├── popup/
-│   │   ├── popup.html           # UI structure
+│   │   ├── popup.html           # UI structure (with ARIA labels)
 │   │   ├── popup.js             # UI logic
 │   │   └── popup.css            # Styling
+│   ├── options/
+│   │   ├── options.html         # Settings page
+│   │   ├── options.js           # Settings logic
+│   │   └── options.css          # Settings styling
 │   └── utils/
-│       └── constants.js         # API endpoints, patterns
-├── assets/
-│   └── icons/                   # Extension icons
+│       ├── constants.js         # API endpoints, patterns
+│       ├── validation.js        # Input validation & sanitization
+│       ├── errors.js            # Error codes & messages
+│       ├── retry.js             # Retry with exponential backoff
+│       ├── network.js           # Connectivity detection
+│       └── ratelimit.js         # API rate limiting
+├── tests/                       # 187 tests
+├── assets/icons/                # Extension icons
 ├── manifest.json                # MV3 manifest
-├── webpack.config.js
-├── package.json
-└── README.md
+└── package.json
 ```
 
 ## Supported URL Formats
