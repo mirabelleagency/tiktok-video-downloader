@@ -1,9 +1,38 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
 release/
+
+# Test coverage
+coverage/
+
+# Logs
 *.log
+npm-debug.log*
+
+# OS files
 .DS_Store
 Thumbs.db
+
+# Environment files
 .env
+.env.*
 *.local
+
+# Archives
 *.zip
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+
+# Development protocol files
+tasksync.md
