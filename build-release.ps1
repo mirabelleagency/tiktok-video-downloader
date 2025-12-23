@@ -7,37 +7,35 @@ param(
 
 Write-Host "Building release v$Version..." -ForegroundColor Cyan
 
-# Clean and recreate release folder
-if (Test-Path "release") {
-    Remove-Item -Path "release" -Recurse -Force
-}
-New-Item -ItemType Directory -Path "release" -Force | Out-Null
-
-# Copy essential files
-Write-Host "Copying files..." -ForegroundColor Yellow
-Copy-Item -Path "manifest.json" -Destination "release/"
-Copy-Item -Path "src" -Destination "release/" -Recurse
-Copy-Item -Path "README.md" -Destination "release/"
-
-# Copy assets/icons
-if (Test-Path "assets") {
-    Copy-Item -Path "assets" -Destination "release/" -Recurse
+# Run webpack production build
+Write-Host "Running webpack build..." -ForegroundColor Yellow
+npm run build
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Webpack build failed!" -ForegroundColor Red
+    exit 1
 }
 
-# Remove any .map files or dev files
-Get-ChildItem -Path "release" -Recurse -Include "*.map" | Remove-Item -Force
+# Verify dist folder exists
+if (-not (Test-Path "dist")) {
+    Write-Host "❌ dist/ folder not found!" -ForegroundColor Red
+    exit 1
+}
 
-# Create ZIP
+# Remove source maps for production release (optional - reduces size)
+Write-Host "Removing source maps..." -ForegroundColor Yellow
+Get-ChildItem -Path "dist" -Recurse -Include "*.map" | Remove-Item -Force
+
+# Create ZIP from dist folder
 $zipPath = "..\TikTok-Video-Downloader-v$Version.zip"
 if (Test-Path $zipPath) {
     Remove-Item $zipPath -Force
 }
-Compress-Archive -Path "release\*" -DestinationPath $zipPath -Force
+Compress-Archive -Path "dist\*" -DestinationPath $zipPath -Force
 
 Write-Host ""
 Write-Host "✅ Release built successfully!" -ForegroundColor Green
 Write-Host "📦 ZIP: $((Resolve-Path $zipPath).Path)" -ForegroundColor White
-Write-Host "📁 Folder: release/" -ForegroundColor White
+Write-Host "📁 Folder: dist/" -ForegroundColor White
 Write-Host ""
 Write-Host "Share instructions:" -ForegroundColor Cyan
 Write-Host "1. Unzip the file"
