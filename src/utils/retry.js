@@ -132,7 +132,7 @@ export async function retryWithBackoff(operation, options = {}) {
 export async function fetchWithRetry(url, options = {}, retryOptions = {}) {
   const config = { ...DEFAULT_RETRY_CONFIG, ...retryOptions.config };
   
-  return retryWithBackoff(async (attempt) => {
+  return retryWithBackoff(async (_attempt) => {
     const response = await fetch(url, {
       ...options,
       signal: retryOptions.signal

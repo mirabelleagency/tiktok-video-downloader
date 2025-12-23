@@ -12,8 +12,7 @@ import {
   isValidVideoUrl,
   sanitizeUsername,
   sanitizeVideoId,
-  isValidFileSize,
-  createSafeFilename
+  isValidFileSize
 } from '../utils/validation.js';
 
 // State management

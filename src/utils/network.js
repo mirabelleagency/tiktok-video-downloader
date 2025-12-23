@@ -122,7 +122,8 @@ export async function checkConnectivity(url = 'https://www.google.com/generate_2
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
-    const response = await fetch(url, {
+    // We only care if the request succeeds, not the response content
+    await fetch(url, {
       method: 'HEAD',
       mode: 'no-cors',
       signal: controller.signal
@@ -130,7 +131,7 @@ export async function checkConnectivity(url = 'https://www.google.com/generate_2
     
     clearTimeout(timeoutId);
     return true;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
