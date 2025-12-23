@@ -1,7 +1,7 @@
 # TikTok Video Downloader - Updated Assessment
 
 > **Assessment Date:** Post-FYP Fix Phase  
-> **Version:** 1.0.0 (Enhanced)  
+> **Version:** 1.0.1 (Enhanced)  
 > **Overall Rating:** ⭐⭐⭐⭐⭐ (4.8/5.0 - Excellent)
 
 ---

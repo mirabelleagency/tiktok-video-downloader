@@ -22,6 +22,9 @@
 | `README.md` | Quick start for developers | Major changes |
 | `SETUP-GUIDE.md` | Detailed installation guide | Setup changes |
 | `CURRENT-ASSESSMENT.md` | Project status and ratings | After improvements |
+| `CHANGELOG.md` | Version history and changes | Every release |
+| `manifest.json` | Extension version | Every release |
+| `package.json` | Package version | Every release |
 | Inline code comments | Code understanding | With code changes |
 
 ---
@@ -174,7 +177,47 @@ Use sparingly for visual scanning:
 1. Update relevant code comments
 2. Add entry to CURRENT-ASSESSMENT.md if significant
 3. Update README.md features list if user-facing
-4. Add changelog entry
+4. **Add changelog entry to CHANGELOG.md**
+5. **Bump version in manifest.json and package.json if releasing**
+
+### Version Bumping
+
+#### When to Bump Version
+- **PATCH (1.0.x)**: Bug fixes, minor improvements, documentation
+- **MINOR (1.x.0)**: New features, non-breaking changes
+- **MAJOR (x.0.0)**: Breaking changes, major rewrites
+
+#### Version Bump Procedure
+1. Update `manifest.json`:
+   ```json
+   "version": "1.0.1"
+   ```
+2. Update `package.json`:
+   ```json
+   "version": "1.0.1"
+   ```
+3. Add entry to `CHANGELOG.md`
+4. Commit with message: `chore: bump version to 1.0.1`
+
+### Changelog Format
+
+Use [Keep a Changelog](https://keepachangelog.com/) format:
+
+```markdown
+## [1.0.1] - 2025-12-23
+
+### Added
+- New feature description
+
+### Fixed
+- Bug fix description
+
+### Changed
+- Change description
+
+### Removed
+- Removed feature description
+```
 
 ### Adding Tests
 
@@ -216,7 +259,10 @@ tiktok-video-downloader/
 ├── README.md                  # Quick start (developers)
 ├── SETUP-GUIDE.md             # Detailed setup (first-time users)
 ├── CURRENT-ASSESSMENT.md      # Project status (assessment)
+├── CHANGELOG.md               # Version history (releases)
 ├── DOCUMENTATION-GUIDE.md     # This file (AI guidance)
+├── manifest.json              # Extension version
+├── package.json               # Package version
 └── src/                       # Inline code comments
 ```
 
@@ -227,6 +273,7 @@ tiktok-video-downloader/
 | README.md | New developers | Quick overview, install, basic usage |
 | SETUP-GUIDE.md | First-time users | Complete setup with OAuth config |
 | CURRENT-ASSESSMENT.md | Project maintainers | Quality metrics, improvements, gaps |
+| CHANGELOG.md | Users & developers | Version history, what changed |
 | This file | AI agents | How to document properly |
 
 ---

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAk5fF7AFheja9gBwiCse4RVln6/Yyi/Zc1LU4fy4G0X6F5B36DpviKNlnbMPZrS97eOdkEuqKmLqzynwozLHjjSVHepF3o+iaCaXFtdBfmpp3UTkmbJQdTuiRygVmSGVLxhqXZFIPD9VAJqLscEf5zBkjfSwpoI+offwUtBwOiezIO3d2zsfUr6BzZDL6jPsNdJ7pEOO1LQ5aUa8Ap9ZVf0lD5ONffYbbzB8KYgSxN3CjSMki2Fk9OfY4nri1zIbCQqndrMuxJ0JTnb6zWmtqucapLa/hHOCRKai6drcC/YewYQWT9PQuiksvF3oKPBPYbgylOyzAZ5duardT1GSdLQIDAQAB",
   "name": "TikTok Video Downloader to Drive",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Download TikTok videos directly to Google Drive with automatic logging",
   "permissions": [
     "identity",
