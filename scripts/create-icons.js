@@ -1,4 +1,5 @@
-// Simple Icon Generator - Creates TikTok-style icons
+// Simple Icon Generator - Creates Video Download icons
+// Design: Download arrow with play symbol (copyright-free)
 const { createCanvas } = require('canvas');
 const fs = require('fs');
 const path = require('path');
@@ -15,9 +16,14 @@ function generateIcon(size) {
   const canvas = createCanvas(size, size);
   const ctx = canvas.getContext('2d');
   
-  // Background - rounded black square
-  const radius = size * 0.15;
-  ctx.fillStyle = '#000000';
+  // Background - gradient rounded square (dark blue to purple)
+  const radius = size * 0.18;
+  const gradient = ctx.createLinearGradient(0, 0, size, size);
+  gradient.addColorStop(0, '#1a1a2e');
+  gradient.addColorStop(1, '#16213e');
+  
+  // Draw rounded rectangle background
+  ctx.fillStyle = gradient;
   ctx.beginPath();
   ctx.moveTo(radius, 0);
   ctx.lineTo(size - radius, 0);
@@ -31,52 +37,54 @@ function generateIcon(size) {
   ctx.closePath();
   ctx.fill();
   
-  // Scale for TikTok logo
-  const scale = size / 24;
+  const scale = size / 48; // Base design is 48px
   const centerX = size / 2;
   const centerY = size / 2;
   
-  // Draw simplified TikTok musical note
-  function drawNote(offsetX, offsetY, color) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    
-    // Note body (vertical bar)
-    const barWidth = 3 * scale;
-    const barHeight = 12 * scale;
-    const barX = centerX - barWidth/2 + offsetX;
-    const barY = centerY - barHeight/2 + offsetY - 2 * scale;
-    
-    ctx.fillRect(barX, barY, barWidth, barHeight);
-    
-    // Note head (circle)
-    const headRadius = 3.5 * scale;
-    const headX = centerX - 4 * scale + offsetX;
-    const headY = centerY + 5 * scale + offsetY;
-    
-    ctx.beginPath();
-    ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
-    ctx.fill();
-    
-    // Top curve
-    const curveX = centerX + 3 * scale + offsetX;
-    const curveY = barY + 2 * scale;
-    
-    ctx.beginPath();
-    ctx.arc(curveX, curveY, 4 * scale, Math.PI * 0.8, Math.PI * 1.8);
-    ctx.lineWidth = 2.5 * scale;
-    ctx.strokeStyle = color;
-    ctx.stroke();
-  }
+  // Draw play button circle (teal/cyan accent)
+  const circleRadius = 14 * scale;
+  ctx.beginPath();
+  ctx.arc(centerX, centerY - 3 * scale, circleRadius, 0, Math.PI * 2);
+  ctx.fillStyle = '#00d4aa';
+  ctx.fill();
   
-  // Draw cyan layer (offset)
-  drawNote(-0.8 * scale, -0.8 * scale, '#25F4EE');
+  // Draw play triangle inside circle
+  ctx.fillStyle = '#1a1a2e';
+  ctx.beginPath();
+  const playX = centerX - 3 * scale;
+  const playY = centerY - 3 * scale;
+  const playSize = 10 * scale;
+  ctx.moveTo(playX - playSize * 0.4, playY - playSize * 0.6);
+  ctx.lineTo(playX + playSize * 0.6, playY);
+  ctx.lineTo(playX - playSize * 0.4, playY + playSize * 0.6);
+  ctx.closePath();
+  ctx.fill();
   
-  // Draw pink layer
-  drawNote(0.8 * scale, 0.8 * scale, '#FE2C55');
+  // Draw download arrow below
+  const arrowY = centerY + 12 * scale;
+  const arrowWidth = 6 * scale;
+  const arrowHeight = 8 * scale;
   
-  // Draw white center
-  drawNote(0, 0, '#FFFFFF');
+  // Arrow stem
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(centerX - 2 * scale, centerY + 6 * scale, 4 * scale, 6 * scale);
+  
+  // Arrow head (triangle pointing down)
+  ctx.beginPath();
+  ctx.moveTo(centerX - arrowWidth, arrowY);
+  ctx.lineTo(centerX + arrowWidth, arrowY);
+  ctx.lineTo(centerX, arrowY + arrowHeight);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Download base line
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2 * scale;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(centerX - 10 * scale, centerY + 20 * scale);
+  ctx.lineTo(centerX + 10 * scale, centerY + 20 * scale);
+  ctx.stroke();
   
   return canvas.toBuffer('image/png');
 }

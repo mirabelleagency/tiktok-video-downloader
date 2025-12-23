@@ -1,5 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none">
-  <rect width="24" height="24" rx="4" fill="#000000"/>
-  <path d="M17.59 8.69a4.83 4.83 0 0 1-3.77-4.25V4h-3.45v11.67a2.89 2.89 0 0 1-2.88 2.88 2.89 2.89 0 0 1-2.88-2.88 2.89 2.89 0 0 1 2.88-2.88c.28 0 .55.04.81.11v-3.5a6.23 6.23 0 0 0-.81-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V11.4a8.16 8.16 0 0 0 4.77 1.53v-3.5a4.85 4.85 0 0 1-1.01-.74z" fill="#FE2C55"/>
-  <path d="M17.59 8.69a4.83 4.83 0 0 1-3.77-4.25V4h-3.45v11.67a2.89 2.89 0 0 1-2.88 2.88 2.89 2.89 0 0 1-2.88-2.88 2.89 2.89 0 0 1 2.88-2.88c.28 0 .55.04.81.11v-3.5a6.23 6.23 0 0 0-.81-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V11.4a8.16 8.16 0 0 0 4.77 1.53v-3.5a4.85 4.85 0 0 1-1.01-.74z" fill="#25F4EE" transform="translate(-1, -1)"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 48 48" fill="none">
+  <!-- Background - dark gradient -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="8" fill="url(#bgGrad)"/>
+  
+  <!-- Play button circle -->
+  <circle cx="24" cy="21" r="14" fill="#00d4aa"/>
+  
+  <!-- Play triangle -->
+  <path d="M20 14 L32 21 L20 28 Z" fill="#1a1a2e"/>
+  
+  <!-- Download arrow stem -->
+  <rect x="22" y="30" width="4" height="6" fill="#ffffff"/>
+  
+  <!-- Download arrow head -->
+  <path d="M18 36 L30 36 L24 44 Z" fill="#ffffff"/>
+  
+  <!-- Download base line -->
+  <line x1="14" y1="44" x2="34" y2="44" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
 </svg>
