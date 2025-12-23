@@ -15,6 +15,9 @@
     "https://*.tiktok.com/*",
     "https://www.googleapis.com/*"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'"
+  },
   "content_scripts": [{
     "matches": ["https://www.tiktok.com/*", "https://*.tiktok.com/*"],
     "js": ["src/content/tiktok.js"],
