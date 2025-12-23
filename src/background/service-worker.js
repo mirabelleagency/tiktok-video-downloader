@@ -8,6 +8,14 @@ import {
   MESSAGE_TYPES 
 } from '../utils/constants.js';
 
+import {
+  isValidVideoUrl,
+  sanitizeUsername,
+  sanitizeVideoId,
+  isValidFileSize,
+  createSafeFilename
+} from '../utils/validation.js';
+
 // State management
 let authToken = null;
 let driveFolderId = null;
@@ -293,7 +301,7 @@ async function ensureDriveFolder() {
   return driveFolderId;
 }
 
-async function uploadToDrive(videoData, videoBlob, onProgress) {
+async function uploadToDrive(videoData, videoBlob, _onProgress) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const fileName = `tiktok_@${videoData.username}_${videoData.videoId}_${timestamp}.mp4`;
   
@@ -477,7 +485,26 @@ async function downloadVideo(videoData, tabId) {
       return { success: false, error: 'Not authenticated. Please connect to Google Drive.' };
     }
     
-    console.log('[SW] Starting download for:', videoData.videoId);
+    // Validate video data
+    if (!videoData || !videoData.videoUrl) {
+      return { success: false, error: 'Invalid video data: No video URL provided.' };
+    }
+    
+    // Validate video URL is from trusted TikTok CDN
+    if (!isValidVideoUrl(videoData.videoUrl)) {
+      console.error('[SW] Invalid video URL rejected:', videoData.videoUrl?.substring(0, 100));
+      return { success: false, error: 'Invalid video URL. URL must be from TikTok CDN.' };
+    }
+    
+    // Sanitize video data
+    const sanitizedData = {
+      ...videoData,
+      username: sanitizeUsername(videoData.username),
+      videoId: sanitizeVideoId(videoData.videoId) || videoData.videoId,
+      description: (videoData.description || '').substring(0, 500) // Limit description length
+    };
+    
+    console.log('[SW] Starting download for:', sanitizedData.videoId);
     
     // Notify popup of progress
     sendProgressUpdate(tabId, 'Fetching video...', 10);
@@ -488,15 +515,15 @@ async function downloadVideo(videoData, tabId) {
     // Method 1: Try direct fetch with various headers
     const fetchMethods = [
       // Basic fetch
-      () => fetch(videoData.videoUrl),
+      () => fetch(sanitizedData.videoUrl),
       // With TikTok referer
-      () => fetch(videoData.videoUrl, {
+      () => fetch(sanitizedData.videoUrl, {
         headers: {
           'Referer': 'https://www.tiktok.com/'
         }
       }),
       // With full headers
-      () => fetch(videoData.videoUrl, {
+      () => fetch(sanitizedData.videoUrl, {
         headers: {
           'Referer': 'https://www.tiktok.com/',
           'Origin': 'https://www.tiktok.com',
@@ -506,7 +533,7 @@ async function downloadVideo(videoData, tabId) {
         credentials: 'omit'
       }),
       // No-cors mode (limited but might work)
-      () => fetch(videoData.videoUrl, { mode: 'no-cors' })
+      () => fetch(sanitizedData.videoUrl, { mode: 'no-cors' })
     ];
     
     for (const fetchMethod of fetchMethods) {
@@ -518,6 +545,11 @@ async function downloadVideo(videoData, tabId) {
           const blob = await response.blob();
           // Check if we got actual video data (not empty or too small)
           if (blob.size > 10000) { // At least 10KB
+            // Validate file size before proceeding
+            if (!isValidFileSize(blob.size, 500)) {
+              console.warn('[SW] Video file too large:', blob.size);
+              return { success: false, error: 'Video file exceeds maximum size (500MB).' };
+            }
             videoBlob = blob;
             console.log('[SW] Video fetched, size:', blob.size);
             break;
@@ -535,7 +567,7 @@ async function downloadVideo(videoData, tabId) {
       try {
         const contentResponse = await chrome.tabs.sendMessage(tabId, {
           type: 'FETCH_VIDEO',
-          videoUrl: videoData.videoUrl
+          videoUrl: sanitizedData.videoUrl
         });
         
         console.log('[SW] Content script response:', JSON.stringify(contentResponse ? {
@@ -555,6 +587,12 @@ async function downloadVideo(videoData, tabId) {
           }
           videoBlob = new Blob([bytes], { type: 'video/mp4' });
           console.log('[SW] Video received from content script, size:', videoBlob.size);
+          
+          // Validate file size
+          if (!isValidFileSize(videoBlob.size, 500)) {
+            console.warn('[SW] Video file too large:', videoBlob.size);
+            return { success: false, error: 'Video file exceeds maximum size (500MB).' };
+          }
         } else if (contentResponse && contentResponse.error) {
           console.log('[SW] Content script returned error:', contentResponse.error);
         }
@@ -570,19 +608,19 @@ async function downloadVideo(videoData, tabId) {
     sendProgressUpdate(tabId, 'Downloading video...', 30);
     sendProgressUpdate(tabId, 'Uploading to Google Drive...', 60);
     
-    // Upload to Drive
-    const driveFile = await uploadToDrive(videoData, videoBlob);
+    // Upload to Drive (use sanitized data)
+    const driveFile = await uploadToDrive(sanitizedData, videoBlob);
     
     sendProgressUpdate(tabId, 'Logging to Google Sheets...', 90);
     
     // Log to Sheets
-    await logToSheet(videoData, driveFile);
+    await logToSheet(sanitizedData, driveFile);
     
     // Save to recent activity
     await saveRecentActivity({
       timestamp: Date.now(),
-      username: videoData.username,
-      videoId: videoData.videoId,
+      username: sanitizedData.username,
+      videoId: sanitizedData.videoId,
       driveLink: driveFile.webViewLink,
       fileName: driveFile.fileName
     });

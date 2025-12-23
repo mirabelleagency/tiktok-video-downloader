@@ -415,6 +415,8 @@ function formatTimeAgo(timestamp) {
 }
 
 // Show toast notification
+// Note: Available for future use in UI feedback
+// eslint-disable-next-line no-unused-vars
 function showToast(message, type = 'info') {
   // Create toast element
   const toast = document.createElement('div');

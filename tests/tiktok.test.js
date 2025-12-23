@@ -1,8 +1,6 @@
 // TikTok Video Downloader - Test Suite
 // Basic tests for video detection and URL extraction
 
-const { JSDOM } = require('jsdom');
-
 // Mock TikTok page data
 const mockPageData = {
   '__DEFAULT_SCOPE__': {

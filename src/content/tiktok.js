@@ -19,7 +19,7 @@ const MESSAGE_TYPES = {
 
 // Current video data state
 let currentVideoData = null;
-let interceptedVideoUrls = new Map();
+const interceptedVideoUrls = new Map();
 let debugOverlay = null;
 let debugEnabled = false;
 
@@ -471,7 +471,7 @@ async function detectVideo(forceRefresh = false) {
     }
     
     // Try to get video URL from multiple sources
-    let videoUrl = await getVideoUrl(videoId);
+    const videoUrl = await getVideoUrl(videoId);
     console.log('[TikTok DL] Got video URL:', videoUrl ? 'Yes' : 'No');
     
     if (videoUrl) {
@@ -524,7 +524,7 @@ async function detectFeedVideo() {
           if (match) {
             const username = match[1];
             const videoId = match[2];
-            let videoUrl = await getVideoUrl(videoId);
+            const videoUrl = await getVideoUrl(videoId);
             
             if (videoUrl) {
               currentVideoData = {
@@ -708,7 +708,9 @@ async function getFreshVideoData() {
   }
 }
 
-// Recursively find video URL in object (used by extractFromPageData)
+// Helper: Recursively find video URL in object
+// Note: Currently unused but kept for fallback extraction
+// eslint-disable-next-line no-unused-vars
 function findVideoUrlInObject(obj, targetVideoId, depth = 0) {
   if (depth > 10 || !obj) return null;
   
@@ -821,10 +823,10 @@ function extractFromPageData(targetVideoId = null) {
               if (obj.downloadAddr) return obj.downloadAddr;
               if (obj.playAddr) return obj.playAddr;
               if (obj.video_url) return obj.video_url;
-            } catch (e) {}
+            } catch (e) { /* Ignore malformed JSON */ }
           }
         }
-      } catch (e) {}
+      } catch (e) { /* Ignore parse errors */ }
     }
   }
   
@@ -855,7 +857,7 @@ function extractFromPageData(targetVideoId = null) {
           }
           console.log('[TikTok DL] Found direct video URL:', url.substring(0, 100));
           return url;
-        } catch (e) {}
+        } catch (e) { /* Ignore decode errors */ }
       }
     }
   }

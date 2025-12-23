@@ -5,14 +5,6 @@
 (function() {
   'use strict';
   
-  const VIDEO_URL_PATTERNS = [
-    /playAddr/i,
-    /downloadAddr/i,
-    /play_addr/i,
-    /download_addr/i,
-    /video\.bitrateInfo/i
-  ];
-  
   const API_ENDPOINTS = [
     '/api/item/detail',
     '/api/recommend/item_list',
@@ -256,7 +248,7 @@
       try {
         const data = JSON.parse(sigiState.textContent);
         processVideoData(data);
-      } catch (e) {}
+      } catch (e) { /* Ignore parse errors */ }
     }
     
     // __UNIVERSAL_DATA_FOR_REHYDRATION__
@@ -265,7 +257,7 @@
       try {
         const data = JSON.parse(universalData.textContent);
         processVideoData(data);
-      } catch (e) {}
+      } catch (e) { /* Ignore parse errors */ }
     }
     
     // __NEXT_DATA__
@@ -276,7 +268,7 @@
         if (data.props?.pageProps) {
           processVideoData(data.props.pageProps);
         }
-      } catch (e) {}
+      } catch (e) { /* Ignore parse errors */ }
     }
   }
   
@@ -474,7 +466,7 @@
       const interval = setInterval(checkSrc, 500);
       
       // Clean up when video is removed
-      const observer = new MutationObserver((mutations) => {
+      const observer = new MutationObserver((_mutations) => {
         if (!document.body.contains(video)) {
           clearInterval(interval);
           observer.disconnect();
