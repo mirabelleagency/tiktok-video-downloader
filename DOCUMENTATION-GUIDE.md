@@ -95,6 +95,7 @@ TikTok Video Downloader is a Chrome extension that allows users to download TikT
 | **Errors** | `src/utils/errors.js` | Error codes, messages, and recovery hints |
 | **Retry** | `src/utils/retry.js` | Exponential backoff retry logic |
 | **Network** | `src/utils/network.js` | Offline detection and network monitoring |
+| **Rate Limit** | `src/utils/ratelimit.js` | Token bucket rate limiting for APIs |
 
 ### Data Flow
 
@@ -339,6 +340,34 @@ Access via Chrome extension options or the settings button in popup:
 
 ## API Reference
 
+### Rate Limiting
+
+The extension includes a token bucket rate limiter for API calls:
+
+```javascript
+// Available pre-configured limiters
+const { rateLimiters, withRateLimit, canMakeRequest, getWaitTimeForService } = require('./utils/ratelimit');
+
+// Check if request can be made
+if (canMakeRequest('googleDrive')) {
+  // Make API call
+}
+
+// Wait for token before making request
+await rateLimiters.googleDrive.waitForToken();
+
+// Wrap function with rate limiting
+const limitedFetch = withRateLimit(fetch, 'googleDrive');
+```
+
+#### Pre-configured Limiters
+
+| Service | Tokens/Second | Max Tokens | Purpose |
+|---------|---------------|------------|---------|
+| `googleDrive` | 5 | 10 | Google Drive API calls |
+| `googleSheets` | 2 | 5 | Google Sheets API calls |
+| `videoFetch` | 3 | 6 | TikTok video fetching |
+
 ### Message Types
 
 The extension uses Chrome message passing. Here are the available message types:
@@ -432,26 +461,28 @@ tiktok-video-downloader/
 │       ├── validation.js      # Input validation utilities
 │       ├── errors.js          # Error codes and messages
 │       ├── retry.js           # Retry with exponential backoff
-│       └── network.js         # Offline detection utilities
+│       ├── network.js         # Offline detection utilities
+│       └── ratelimit.js       # Token bucket rate limiting
 │
 ├── scripts/
-│   ├── create-icons.js        # Icon generation utility
-│   ├── generate-icons.js      # Alternative icon generator
-│   └── generate_key.py        # Extension key generator
+│   └── create-icons.js        # Icon generation utility
 │
 ├── tests/
 │   ├── mocks/
 │   │   └── chrome.mock.js     # Chrome API mocks
-│   ├── tiktok.test.js         # TikTok content script tests
-│   ├── validation.test.js     # Validation utility tests
-│   ├── errors.test.js         # Error definitions tests
-│   ├── service-worker.test.js # Service worker tests
-│   ├── popup.test.js          # Popup logic tests
-│   ├── retry.test.js          # Retry utility tests
-│   └── network.test.js        # Network utility tests
+│   ├── content.test.js        # Content script tests (44 tests)
+│   ├── errors.test.js         # Error definitions tests (6 tests)
+│   ├── network.test.js        # Network utility tests (11 tests)
+│   ├── options.test.js        # Options page tests (30 tests)
+│   ├── popup.test.js          # Popup logic tests (21 tests)
+│   ├── ratelimit.test.js      # Rate limiter tests (21 tests)
+│   ├── retry.test.js          # Retry utility tests (15 tests)
+│   ├── service-worker.test.js # Service worker tests (12 tests)
+│   ├── tiktok.test.js         # TikTok URL pattern tests (11 tests)
+│   ├── validation.test.js     # Validation utility tests (24 tests)
+│   └── setup.js               # Test setup configuration
 │
-└── release/
-    └── ...                    # Production build output
+└── dist/                      # Production build output
 ```
 
 ---
@@ -518,6 +549,24 @@ npm test
 ---
 
 ## Testing
+
+### Test Suite Overview
+
+The extension includes comprehensive test coverage:
+
+| Test File | Tests | Description |
+|-----------|-------|-------------|
+| `content.test.js` | 44 | Content script functionality |
+| `errors.test.js` | 6 | Error definitions and helpers |
+| `network.test.js` | 11 | Network utilities |
+| `options.test.js` | 30 | Options page logic |
+| `popup.test.js` | 21 | Popup interface logic |
+| `ratelimit.test.js` | 21 | Rate limiting utilities |
+| `retry.test.js` | 15 | Retry mechanism |
+| `service-worker.test.js` | 12 | Background service worker |
+| `tiktok.test.js` | 11 | TikTok URL patterns |
+| `validation.test.js` | 24 | Input validation |
+| **Total** | **187** | All tests passing |
 
 ### Running Tests
 
@@ -679,6 +728,17 @@ A: In Google Drive under "TikTok Downloads" folder.
 - Activity feed
 - Options page for configuration
 - Support for multiple URL formats
+
+**Enhancement Phase**
+- Input validation utilities (validation.js)
+- Structured error handling (errors.js)
+- Retry mechanism with exponential backoff (retry.js)
+- Network connectivity detection (network.js)
+- Rate limiting utilities (ratelimit.js)
+- Content Security Policy
+- Accessibility improvements (ARIA labels)
+- Comprehensive test suite (187 tests)
+- Copyright-free icon design
 
 ---
 
