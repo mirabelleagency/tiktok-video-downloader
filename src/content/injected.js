@@ -17,7 +17,12 @@
     '/api/user/detail',
     '/v1/feed',
     '/v2/feed',
-    '/api/related/item_list'
+    '/api/related/item_list',
+    // Additional endpoints for FYP
+    '/api/feed/item_list',
+    '/api/recommend/item_list',
+    '/tiktok/api/recommend',
+    '/api/item_list'
   ];
   
   // Track all video URLs we've seen in current session
@@ -260,6 +265,11 @@
       } catch (e) { /* Ignore parse errors */ }
     }
     
+    // Check window objects too
+    if (window.__UNIVERSAL_DATA_FOR_REHYDRATION__) {
+      processVideoData(window.__UNIVERSAL_DATA_FOR_REHYDRATION__);
+    }
+    
     // __NEXT_DATA__
     const nextData = document.getElementById('__NEXT_DATA__');
     if (nextData) {
@@ -349,6 +359,204 @@
     }
   });
   
+  // ============ Search TikTok Internal Stores ============
+  
+  // Search TikTok's internal state for video URLs by video ID
+  function searchTikTokStores(videoId) {
+    console.log('[TikTok DL Injected] Searching TikTok stores for:', videoId);
+    
+    // Method 1: Check window.__PRELOADED_UNIVERSAL_DATA__
+    if (window.__PRELOADED_UNIVERSAL_DATA__) {
+      const url = findVideoUrlInObject(window.__PRELOADED_UNIVERSAL_DATA__, videoId);
+      if (url) {
+        console.log('[TikTok DL Injected] Found in __PRELOADED_UNIVERSAL_DATA__');
+        return url;
+      }
+    }
+    
+    // Method 1b: Check UNIVERSAL_DATA_FOR_REHYDRATION
+    if (window.__UNIVERSAL_DATA_FOR_REHYDRATION__) {
+      const url = findVideoUrlInObject(window.__UNIVERSAL_DATA_FOR_REHYDRATION__, videoId);
+      if (url) {
+        console.log('[TikTok DL Injected] Found in __UNIVERSAL_DATA_FOR_REHYDRATION__');
+        return url;
+      }
+    }
+    
+    // Method 2: Check window.__videoPlayerStore__ or similar stores
+    const possibleStores = [
+      '__videoPlayerStore__', '__feedStore__', '__itemStore__',
+      '__NEXT_DATA__', '__NUXT__', '__INITIAL_STATE__', 'SIGI_STATE',
+      '__videoData__', '__playerData__', '__tiktokData__'
+    ];
+    for (const storeName of possibleStores) {
+      if (window[storeName]) {
+        const url = findVideoUrlInObject(window[storeName], videoId);
+        if (url) {
+          console.log('[TikTok DL Injected] Found in', storeName);
+          return url;
+        }
+      }
+    }
+    
+    // Method 3: Search all window properties starting with __ for stores
+    for (const key of Object.keys(window)) {
+      if (key.startsWith('__') && typeof window[key] === 'object' && window[key] !== null) {
+        try {
+          const url = findVideoUrlInObject(window[key], videoId, 0, 3);
+          if (url) {
+            console.log('[TikTok DL Injected] Found in window.' + key);
+            return url;
+          }
+        } catch (e) {
+          // Skip problematic objects
+        }
+      }
+    }
+    
+    // Method 4: Check xgplayer instances (TikTok's video player)
+    const xgplayers = document.querySelectorAll('[id^="xgwrapper-"]');
+    for (const player of xgplayers) {
+      if (player.id.includes(videoId)) {
+        const fiber = findReactFiber(player);
+        if (fiber) {
+          const url = extractUrlFromFiber(fiber, videoId);
+          if (url) {
+            console.log('[TikTok DL Injected] Found via React fiber');
+            return url;
+          }
+        }
+      }
+    }
+    
+    // Method 5: Check media-card elements for video data
+    const mediaCards = document.querySelectorAll('[id^="media-card-"]');
+    for (const card of mediaCards) {
+      const wrapper = card.querySelector(`[id*="${videoId}"]`);
+      if (wrapper) {
+        const fiber = findReactFiber(card);
+        if (fiber) {
+          const url = extractUrlFromFiber(fiber, videoId);
+          if (url) {
+            console.log('[TikTok DL Injected] Found via media-card fiber');
+            return url;
+          }
+        }
+      }
+    }
+    
+    return null;
+  }
+  
+  // Find video URL within an object structure
+  function findVideoUrlInObject(obj, videoId, depth = 0, maxDepth = 10) {
+    if (depth > maxDepth || !obj || typeof obj !== 'object') return null;
+    
+    // Check if this object has our video ID
+    const idStr = String(videoId);
+    const hasId = obj.id === idStr || obj.id === videoId || 
+                  obj.itemId === idStr || obj.videoId === idStr ||
+                  obj.awemeId === idStr;
+    
+    if (hasId) {
+      // This might be our video object, extract URL
+      const url = extractBestVideoUrl(obj.video) || 
+                  extractBestVideoUrl(obj) ||
+                  obj.playUrl || obj.downloadUrl || obj.url;
+      if (url && typeof url === 'string' && url.includes('http')) {
+        return url;
+      }
+    }
+    
+    // Search arrays
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        const url = findVideoUrlInObject(item, videoId, depth + 1, maxDepth);
+        if (url) return url;
+      }
+      return null;
+    }
+    
+    // Search object properties
+    const keys = Object.keys(obj);
+    for (const key of keys) {
+      // Skip circular references and DOM nodes
+      if (key === 'window' || key === 'document' || key === 'parent' || 
+          key === 'self' || key === 'top' || key.startsWith('_react')) {
+        continue;
+      }
+      
+      try {
+        const val = obj[key];
+        if (val && typeof val === 'object') {
+          const url = findVideoUrlInObject(val, videoId, depth + 1, maxDepth);
+          if (url) return url;
+        }
+      } catch (e) {
+        // Skip properties that throw on access
+      }
+    }
+    
+    return null;
+  }
+  
+  // Find React fiber on element
+  function findReactFiber(element) {
+    const keys = Object.keys(element);
+    for (const key of keys) {
+      if (key.startsWith('__reactFiber$') || key.startsWith('__reactInternalInstance$')) {
+        return element[key];
+      }
+    }
+    return null;
+  }
+  
+  // Extract URL from React fiber
+  function extractUrlFromFiber(fiber, videoId, depth = 0) {
+    if (depth > 20 || !fiber) return null;
+    
+    // Check memoizedProps for video data
+    if (fiber.memoizedProps) {
+      const props = fiber.memoizedProps;
+      
+      // Check for video URL in props
+      if (props.video || props.videoData || props.itemInfo || props.aweme) {
+        const data = props.video || props.videoData || props.itemInfo || props.aweme;
+        const url = extractBestVideoUrl(data);
+        if (url) return url;
+      }
+      
+      // Check for playUrl directly
+      if (props.playUrl && typeof props.playUrl === 'string') {
+        return props.playUrl;
+      }
+    }
+    
+    // Check memoizedState
+    if (fiber.memoizedState && fiber.memoizedState.memoizedState) {
+      try {
+        const url = findVideoUrlInObject(fiber.memoizedState, videoId, 0, 5);
+        if (url) return url;
+      } catch (e) {}
+    }
+    
+    // Traverse up and down the fiber tree
+    if (fiber.child) {
+      const url = extractUrlFromFiber(fiber.child, videoId, depth + 1);
+      if (url) return url;
+    }
+    if (fiber.sibling) {
+      const url = extractUrlFromFiber(fiber.sibling, videoId, depth + 1);
+      if (url) return url;
+    }
+    if (fiber.return && depth < 5) {
+      const url = extractUrlFromFiber(fiber.return, videoId, depth + 1);
+      if (url) return url;
+    }
+    
+    return null;
+  }
+  
   // ============ Get Current Video Directly ============
   
   // Get the currently playing video directly from video element
@@ -357,6 +565,18 @@
     console.log('[TikTok DL Injected] Getting current video:', requestId, videoId);
     
     try {
+      // First, try to find URL in TikTok's internal stores
+      if (videoId) {
+        const storeUrl = searchTikTokStores(videoId);
+        if (storeUrl) {
+          console.log('[TikTok DL Injected] Found URL in TikTok stores');
+          window.dispatchEvent(new CustomEvent('tiktok-current-video-result', {
+            detail: { requestId, success: true, videoUrl: storeUrl, method: 'tiktok-store' }
+          }));
+          return;
+        }
+      }
+      
       // Find the video element that's currently playing
       const videos = document.querySelectorAll('video');
       let targetVideo = null;

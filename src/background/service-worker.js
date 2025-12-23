@@ -428,6 +428,7 @@ async function ensureSheet() {
               { userEnteredValue: { stringValue: 'Drive Link' } },
               { userEnteredValue: { stringValue: 'File Name' } },
               { userEnteredValue: { stringValue: 'Username' } },
+              { userEnteredValue: { stringValue: 'Description' } },
               { userEnteredValue: { stringValue: 'Status' } }
             ]
           }]
@@ -450,17 +451,23 @@ async function ensureSheet() {
 async function logToSheet(videoData, driveFile, status = 'Success') {
   const timestamp = new Date().toLocaleString();
   
+  // Clean up description - remove newlines and limit length
+  const description = (videoData.description || '')
+    .replace(/[\n\r]+/g, ' ')
+    .substring(0, 500);
+  
   const values = [[
     timestamp,
     videoData.pageUrl,
     driveFile.webViewLink,
     driveFile.fileName,
     `@${videoData.username}`,
+    description,
     status
   ]];
   
   const response = await fetch(
-    `${GOOGLE_APIS.SHEETS}/${sheetId}/values/Downloads!A:F:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+    `${GOOGLE_APIS.SHEETS}/${sheetId}/values/Downloads!A:G:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
     {
       method: 'POST',
       headers: {

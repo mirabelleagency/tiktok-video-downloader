@@ -36,7 +36,7 @@ describe('TikTok URL Patterns', () => {
     VIDEO: /tiktok\.com\/@([^/]+)\/video\/(\d+)/,
     SHORT: /vm\.tiktok\.com\/([A-Za-z0-9]+)/,
     MOBILE: /m\.tiktok\.com\/v\/(\d+)/,
-    FYP: /tiktok\.com\/foryou/,
+    FYP: /tiktok\.com\/(foryou)?(\?.*)?$/,  // Matches /foryou and root URL /
     FOLLOWING: /tiktok\.com\/following/,
     PROFILE: /tiktok\.com\/@([^/?]+)$/
   };
@@ -65,6 +65,11 @@ describe('TikTok URL Patterns', () => {
 
   test('should match FYP URL', () => {
     const url = 'https://www.tiktok.com/foryou';
+    expect(TIKTOK_PATTERNS.FYP.test(url)).toBe(true);
+  });
+
+  test('should match root URL as FYP', () => {
+    const url = 'https://www.tiktok.com/';
     expect(TIKTOK_PATTERNS.FYP.test(url)).toBe(true);
   });
 

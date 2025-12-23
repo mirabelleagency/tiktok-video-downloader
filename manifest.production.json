@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "TikTok Video Downloader to Drive",
+  "version": "1.0.0",
+  "description": "Download TikTok videos directly to Google Drive with automatic logging",
+  "permissions": [
+    "identity",
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.tiktok.com/*",
+    "https://*.tiktok.com/*",
+    "https://www.googleapis.com/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'"
+  },
+  "content_scripts": [{
+    "matches": ["https://www.tiktok.com/*", "https://*.tiktok.com/*"],
+    "js": ["src/content/tiktok.js"],
+    "run_at": "document_idle"
+  }],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "options_page": "src/options/options.html",
+  "web_accessible_resources": [{
+    "resources": ["src/content/injected.js"],
+    "matches": ["https://www.tiktok.com/*", "https://*.tiktok.com/*"]
+  }],
+  "oauth2": {
+    "client_id": "1035196287470-8udvrtnbe6j4gittdn7np165gpsfhbbm.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/drive.file",
+      "https://www.googleapis.com/auth/spreadsheets",
+      "https://www.googleapis.com/auth/userinfo.email"
+    ]
+  }
+}

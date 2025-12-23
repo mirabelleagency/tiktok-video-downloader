@@ -5,7 +5,7 @@ const TIKTOK_PATTERNS = {
   VIDEO: /tiktok\.com\/@([^/]+)\/video\/(\d+)/,
   SHORT: /vm\.tiktok\.com\/([A-Za-z0-9]+)/,
   MOBILE: /m\.tiktok\.com\/v\/(\d+)/,
-  FYP: /tiktok\.com\/foryou/,
+  FYP: /tiktok\.com\/(foryou)?(\?.*)?$/,  // Matches /foryou and root URL /
   FOLLOWING: /tiktok\.com\/following/,
   PROFILE: /tiktok\.com\/@([^/?]+)$/
 };
@@ -512,32 +512,89 @@ async function detectFeedVideo() {
       const container = video.closest('[data-e2e="recommend-list-item-container"]') ||
                        video.closest('[class*="DivItemContainer"]') ||
                        video.closest('[class*="DivVideoCardContainer"]') ||
+                       video.closest('article[class*="ArticleItemContainer"]') ||
                        video.closest('div[class*="video-card"]') ||
                        video.parentElement?.parentElement?.parentElement;
       
       if (container) {
+        let videoId = null;
+        let username = null;
+        let pageUrl = null;
+        
+        // Method 1: Try direct video link (works on profile pages)
         const linkElement = container.querySelector('a[href*="/video/"]');
         if (linkElement) {
           const href = linkElement.href;
           const match = href.match(TIKTOK_PATTERNS.VIDEO);
-          
           if (match) {
-            const username = match[1];
-            const videoId = match[2];
-            const videoUrl = await getVideoUrl(videoId);
-            
-            if (videoUrl) {
-              currentVideoData = {
-                videoUrl,
-                videoId,
-                username,
-                description: getVideoDescription(container),
-                timestamp: new Date().toISOString(),
-                pageUrl: href
-              };
-              
-              return currentVideoData;
+            username = match[1];
+            videoId = match[2];
+            pageUrl = href;
+          }
+        }
+        
+        // Method 2: Extract from xgplayer wrapper ID (FYP/Following - no video links)
+        // Format: xgwrapper-0-7556991857977249025 where the last number is videoId
+        if (!videoId) {
+          const xgWrapper = container.querySelector('[id^="xgwrapper-"]');
+          if (xgWrapper) {
+            const wrapperId = xgWrapper.id;
+            const wrapperMatch = wrapperId.match(/xgwrapper-\d+-(\d+)/);
+            if (wrapperMatch) {
+              videoId = wrapperMatch[1];
+              console.log('[TikTok DL] Found video ID from xgwrapper:', videoId);
             }
+          }
+        }
+        
+        // Method 3: Extract from media-card ID (format: media-card-0)
+        // Then get videoId from the wrapper inside
+        if (!videoId) {
+          const mediaCard = container.querySelector('[id^="media-card-"]');
+          if (mediaCard) {
+            const innerWrapper = mediaCard.querySelector('[id^="xgwrapper-"]');
+            if (innerWrapper) {
+              const wrapperMatch = innerWrapper.id.match(/xgwrapper-\d+-(\d+)/);
+              if (wrapperMatch) {
+                videoId = wrapperMatch[1];
+                console.log('[TikTok DL] Found video ID from media-card xgwrapper:', videoId);
+              }
+            }
+          }
+        }
+        
+        // Get username from creator profile link if not found
+        if (!username) {
+          const creatorLink = container.querySelector('a[href^="/@"]');
+          if (creatorLink) {
+            const creatorMatch = creatorLink.href.match(/\/@([^/?]+)/);
+            if (creatorMatch) {
+              username = creatorMatch[1];
+              console.log('[TikTok DL] Found username from creator link:', username);
+            }
+          }
+        }
+        
+        // Construct page URL if we have both pieces
+        if (videoId && username && !pageUrl) {
+          pageUrl = `https://www.tiktok.com/@${username}/video/${videoId}`;
+        }
+        
+        if (videoId) {
+          const videoUrl = await getVideoUrl(videoId);
+          
+          if (videoUrl) {
+            currentVideoData = {
+              videoUrl,
+              videoId,
+              username: username || 'unknown',
+              description: getVideoDescription(container),
+              timestamp: new Date().toISOString(),
+              pageUrl: pageUrl || window.location.href
+            };
+            
+            console.log('[TikTok DL] Feed video data found:', currentVideoData);
+            return currentVideoData;
           }
         }
       }
