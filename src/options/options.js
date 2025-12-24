@@ -19,14 +19,40 @@ const elements = {
   resetBtn: document.getElementById('reset-btn'),
   toast: document.getElementById('toast'),
   toastMessage: document.getElementById('toast-message'),
-  version: document.getElementById('version')
+  version: document.getElementById('version'),
+  // Custom folder elements
+  useCustomFolder: document.getElementById('use-custom-folder'),
+  customFolderSettings: document.getElementById('custom-folder-settings'),
+  customFolderId: document.getElementById('custom-folder-id'),
+  customFolderName: document.getElementById('custom-folder-name'),
+  testFolderAccess: document.getElementById('test-folder-access'),
+  folderStatus: document.getElementById('folder-status'),
+  folderIdHelp: document.getElementById('folder-id-help'),
+  folderHelpModal: document.getElementById('folder-help-modal'),
+  closeFolderModal: document.getElementById('close-folder-modal'),
+  // Custom spreadsheet elements
+  useCustomSpreadsheet: document.getElementById('use-custom-spreadsheet'),
+  customSpreadsheetSettings: document.getElementById('custom-spreadsheet-settings'),
+  customSpreadsheetId: document.getElementById('custom-spreadsheet-id'),
+  testSpreadsheetAccess: document.getElementById('test-spreadsheet-access'),
+  spreadsheetStatus: document.getElementById('spreadsheet-status'),
+  spreadsheetIdHelp: document.getElementById('spreadsheet-id-help'),
+  spreadsheetHelpModal: document.getElementById('spreadsheet-help-modal'),
+  closeSpreadsheetModal: document.getElementById('close-spreadsheet-modal')
 };
 
 // Default settings
 const defaultSettings = {
   driveFolderName: 'TikTok Downloads',
   sheetsName: 'TikTok Download Log',
-  showNotifications: true
+  showNotifications: true,
+  // Custom folder settings
+  useCustomFolderId: false,
+  customDriveFolderId: '',
+  customFolderName: '',
+  // Custom spreadsheet settings
+  useCustomSpreadsheetId: false,
+  customSpreadsheetId: ''
 };
 
 // Initialize on DOM load
@@ -50,8 +76,44 @@ function setupEventListeners() {
   elements.refreshSpreadsheets?.addEventListener('click', loadSpreadsheets);
   elements.spreadsheetSelect?.addEventListener('change', selectSpreadsheet);
   
+  // Custom folder event listeners
+  elements.useCustomFolder?.addEventListener('change', toggleCustomFolder);
+  elements.testFolderAccess?.addEventListener('click', testFolderAccess);
+  elements.folderIdHelp?.addEventListener('click', (e) => {
+    e.preventDefault();
+    elements.folderHelpModal?.classList.remove('hidden');
+  });
+  elements.closeFolderModal?.addEventListener('click', () => {
+    elements.folderHelpModal?.classList.add('hidden');
+  });
+  
+  // Custom spreadsheet event listeners
+  elements.useCustomSpreadsheet?.addEventListener('change', toggleCustomSpreadsheet);
+  elements.testSpreadsheetAccess?.addEventListener('click', testSpreadsheetAccess);
+  elements.spreadsheetIdHelp?.addEventListener('click', (e) => {
+    e.preventDefault();
+    elements.spreadsheetHelpModal?.classList.remove('hidden');
+  });
+  elements.closeSpreadsheetModal?.addEventListener('click', () => {
+    elements.spreadsheetHelpModal?.classList.add('hidden');
+  });
+  
+  // Close modals when clicking outside
+  elements.folderHelpModal?.addEventListener('click', (e) => {
+    if (e.target === elements.folderHelpModal) {
+      elements.folderHelpModal.classList.add('hidden');
+    }
+  });
+  elements.spreadsheetHelpModal?.addEventListener('click', (e) => {
+    if (e.target === elements.spreadsheetHelpModal) {
+      elements.spreadsheetHelpModal.classList.add('hidden');
+    }
+  });
+  
   // Mark unsaved changes
-  [elements.driveFolder, elements.sheetsName, elements.showNotifications].forEach(el => {
+  [elements.driveFolder, elements.sheetsName, elements.showNotifications,
+   elements.useCustomFolder, elements.customFolderId, elements.customFolderName,
+   elements.useCustomSpreadsheet, elements.customSpreadsheetId].forEach(el => {
     el?.addEventListener('change', () => {
       elements.saveBtn.textContent = 'Save Settings*';
     });
@@ -74,6 +136,27 @@ async function loadSettings() {
       elements.showNotifications.checked = currentSettings.showNotifications ?? defaultSettings.showNotifications;
     }
     
+    // Load custom folder settings
+    if (elements.useCustomFolder) {
+      elements.useCustomFolder.checked = currentSettings.useCustomFolderId ?? false;
+      toggleCustomFolder();
+    }
+    if (elements.customFolderId) {
+      elements.customFolderId.value = currentSettings.customDriveFolderId || '';
+    }
+    if (elements.customFolderName) {
+      elements.customFolderName.value = currentSettings.customFolderName || '';
+    }
+    
+    // Load custom spreadsheet settings
+    if (elements.useCustomSpreadsheet) {
+      elements.useCustomSpreadsheet.checked = currentSettings.useCustomSpreadsheetId ?? false;
+      toggleCustomSpreadsheet();
+    }
+    if (elements.customSpreadsheetId) {
+      elements.customSpreadsheetId.value = currentSettings.customSpreadsheetId || '';
+    }
+    
     console.log('[Options] Settings loaded');
   } catch (error) {
     console.error('[Options] Failed to load settings:', error);
@@ -87,10 +170,21 @@ async function saveSettings() {
     const settings = {
       driveFolderName: elements.driveFolder?.value || defaultSettings.driveFolderName,
       sheetsName: elements.sheetsName?.value || defaultSettings.sheetsName,
-      showNotifications: elements.showNotifications?.checked ?? defaultSettings.showNotifications
+      showNotifications: elements.showNotifications?.checked ?? defaultSettings.showNotifications,
+      // Custom folder settings
+      useCustomFolderId: elements.useCustomFolder?.checked ?? false,
+      customDriveFolderId: elements.customFolderId?.value || '',
+      customFolderName: elements.customFolderName?.value || '',
+      // Custom spreadsheet settings
+      useCustomSpreadsheetId: elements.useCustomSpreadsheet?.checked ?? false,
+      customSpreadsheetId: elements.customSpreadsheetId?.value || ''
     };
     
     await chrome.storage.local.set({ settings });
+    
+    // Notify service worker of settings change
+    await sendMessage({ action: 'settingsUpdated', data: settings });
+    
     elements.saveBtn.textContent = 'Save Settings';
     showToast('Settings saved successfully', 'success');
     console.log('[Options] Settings saved');
@@ -282,4 +376,134 @@ function sendMessage(message) {
       }
     });
   });
+}
+
+// Toggle custom folder settings visibility
+function toggleCustomFolder() {
+  if (elements.customFolderSettings) {
+    elements.customFolderSettings.style.display = elements.useCustomFolder?.checked ? 'block' : 'none';
+  }
+  // Clear status when toggling
+  if (elements.folderStatus) {
+    elements.folderStatus.className = 'folder-status';
+    elements.folderStatus.textContent = '';
+  }
+}
+
+// Toggle custom spreadsheet settings visibility
+function toggleCustomSpreadsheet() {
+  if (elements.customSpreadsheetSettings) {
+    elements.customSpreadsheetSettings.style.display = elements.useCustomSpreadsheet?.checked ? 'block' : 'none';
+  }
+  // Clear status when toggling
+  if (elements.spreadsheetStatus) {
+    elements.spreadsheetStatus.className = 'folder-status';
+    elements.spreadsheetStatus.textContent = '';
+  }
+}
+
+// Test folder access
+async function testFolderAccess() {
+  const folderId = elements.customFolderId?.value?.trim();
+  
+  if (!folderId) {
+    showToast('Please enter a folder ID', 'error');
+    return;
+  }
+  
+  if (elements.folderStatus) {
+    elements.folderStatus.className = 'folder-status checking';
+    elements.folderStatus.textContent = '⏳ Checking folder access...';
+  }
+  
+  if (elements.testFolderAccess) {
+    elements.testFolderAccess.disabled = true;
+  }
+  
+  try {
+    const response = await sendMessage({
+      action: 'validateFolder',
+      data: { folderId }
+    });
+    
+    if (response.success) {
+      if (elements.folderStatus) {
+        elements.folderStatus.className = 'folder-status valid';
+        elements.folderStatus.textContent = `✅ Valid - "${response.folderName}" - You have write access`;
+      }
+      // Auto-fill display name if empty
+      if (elements.customFolderName && !elements.customFolderName.value && response.folderName) {
+        elements.customFolderName.value = response.folderName;
+      }
+      showToast('Folder access verified', 'success');
+    } else {
+      if (elements.folderStatus) {
+        elements.folderStatus.className = 'folder-status invalid';
+        elements.folderStatus.textContent = `❌ ${response.error || 'Access denied or folder not found'}`;
+      }
+      showToast(response.error || 'Folder access denied', 'error');
+    }
+  } catch (error) {
+    console.error('[Options] Folder validation error:', error);
+    if (elements.folderStatus) {
+      elements.folderStatus.className = 'folder-status invalid';
+      elements.folderStatus.textContent = `❌ Error: ${error.message}`;
+    }
+    showToast('Failed to validate folder', 'error');
+  } finally {
+    if (elements.testFolderAccess) {
+      elements.testFolderAccess.disabled = false;
+    }
+  }
+}
+
+// Test spreadsheet access
+async function testSpreadsheetAccess() {
+  const spreadsheetId = elements.customSpreadsheetId?.value?.trim();
+  
+  if (!spreadsheetId) {
+    showToast('Please enter a spreadsheet ID', 'error');
+    return;
+  }
+  
+  if (elements.spreadsheetStatus) {
+    elements.spreadsheetStatus.className = 'folder-status checking';
+    elements.spreadsheetStatus.textContent = '⏳ Checking spreadsheet access...';
+  }
+  
+  if (elements.testSpreadsheetAccess) {
+    elements.testSpreadsheetAccess.disabled = true;
+  }
+  
+  try {
+    const response = await sendMessage({
+      action: 'validateSheet',
+      data: { sheetId: spreadsheetId }
+    });
+    
+    if (response.success) {
+      if (elements.spreadsheetStatus) {
+        elements.spreadsheetStatus.className = 'folder-status valid';
+        elements.spreadsheetStatus.textContent = `✅ Valid - "${response.title}" - You have write access`;
+      }
+      showToast('Spreadsheet access verified', 'success');
+    } else {
+      if (elements.spreadsheetStatus) {
+        elements.spreadsheetStatus.className = 'folder-status invalid';
+        elements.spreadsheetStatus.textContent = `❌ ${response.error || 'Access denied or spreadsheet not found'}`;
+      }
+      showToast(response.error || 'Spreadsheet access denied', 'error');
+    }
+  } catch (error) {
+    console.error('[Options] Spreadsheet validation error:', error);
+    if (elements.spreadsheetStatus) {
+      elements.spreadsheetStatus.className = 'folder-status invalid';
+      elements.spreadsheetStatus.textContent = `❌ Error: ${error.message}`;
+    }
+    showToast('Failed to validate spreadsheet', 'error');
+  } finally {
+    if (elements.testSpreadsheetAccess) {
+      elements.testSpreadsheetAccess.disabled = false;
+    }
+  }
 }

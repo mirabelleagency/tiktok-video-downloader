@@ -36,9 +36,45 @@
           <input type="text" id="drive-folder" placeholder="TikTok Downloads">
           <p class="setting-help">Videos will be saved to this folder in your Google Drive</p>
         </div>
+        
+        <!-- Custom Folder Section -->
+        <div class="setting-item checkbox-item">
+          <label>
+            <input type="checkbox" id="use-custom-folder">
+            <span class="checkbox-label">Use custom Drive folder</span>
+          </label>
+          <p class="setting-help">When enabled, videos will be saved to the specified folder ID instead of auto-created folder</p>
+        </div>
+        
+        <div class="custom-folder-settings" id="custom-folder-settings" style="display: none;">
+          <div class="setting-item">
+            <label for="custom-folder-id">Folder ID</label>
+            <input type="text" id="custom-folder-id" placeholder="1ABC2DEF3GHI4JKL5MNO6PQR">
+            <p class="setting-help">
+              <a href="#" id="folder-id-help" class="help-link">How to find your folder ID</a>
+            </p>
+          </div>
+          
+          <div class="setting-item">
+            <label for="custom-folder-name">Display Name (optional)</label>
+            <input type="text" id="custom-folder-name" placeholder="Team Downloads">
+            <p class="setting-help">A friendly name for your reference</p>
+          </div>
+          
+          <div class="setting-item">
+            <button id="test-folder-access" class="btn btn-secondary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              Test Folder Access
+            </button>
+            <div id="folder-status" class="folder-status"></div>
+          </div>
+        </div>
       </section>
 
-      <!-- Google Sheets Settings -->
+      <!-- Google Sheets -->
       <section class="settings-section">
         <h2>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="section-icon">
@@ -53,6 +89,36 @@
           <label for="sheets-name">Spreadsheet Name</label>
           <input type="text" id="sheets-name" placeholder="TikTok Download Log">
           <p class="setting-help">Download logs will be recorded in this spreadsheet</p>
+        </div>
+        
+        <!-- Custom Spreadsheet Option -->
+        <div class="setting-item checkbox-item">
+          <label>
+            <input type="checkbox" id="use-custom-spreadsheet">
+            <span class="checkbox-label">Use custom spreadsheet ID</span>
+          </label>
+          <p class="setting-help">When enabled, logs will be saved to the specified spreadsheet</p>
+        </div>
+        
+        <div class="custom-spreadsheet-settings" id="custom-spreadsheet-settings" style="display: none;">
+          <div class="setting-item">
+            <label for="custom-spreadsheet-id">Spreadsheet ID</label>
+            <input type="text" id="custom-spreadsheet-id" placeholder="1ABC2DEF3GHI4JKL5MNO6PQR7STU8VWX">
+            <p class="setting-help">
+              <a href="#" id="spreadsheet-id-help" class="help-link">How to find your spreadsheet ID</a>
+            </p>
+          </div>
+          
+          <div class="setting-item">
+            <button id="test-spreadsheet-access" class="btn btn-secondary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              Test Spreadsheet Access
+            </button>
+            <div id="spreadsheet-status" class="folder-status"></div>
+          </div>
         </div>
 
         <div class="setting-item">
@@ -148,6 +214,60 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast hidden">
       <span id="toast-message"></span>
+    </div>
+    
+    <!-- Help Modal for Folder ID -->
+    <div id="folder-help-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>How to Find Your Folder ID</h3>
+          <button class="modal-close" id="close-folder-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <ol>
+            <li>Open <strong>Google Drive</strong> in your browser</li>
+            <li>Navigate to the folder you want to use</li>
+            <li>Look at the URL in your browser's address bar:
+              <code>drive.google.com/drive/folders/<strong>XXXXX</strong></code>
+            </li>
+            <li>Copy the <strong>XXXXX</strong> part - that's your folder ID</li>
+          </ol>
+          <div class="modal-note">
+            <strong>For shared folders:</strong>
+            <ul>
+              <li>Make sure you have "Editor" access to the folder</li>
+              <li>The folder owner can share it from Drive's share menu</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Help Modal for Spreadsheet ID -->
+    <div id="spreadsheet-help-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>How to Find Your Spreadsheet ID</h3>
+          <button class="modal-close" id="close-spreadsheet-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <ol>
+            <li>Open <strong>Google Sheets</strong> in your browser</li>
+            <li>Open the spreadsheet you want to use</li>
+            <li>Look at the URL in your browser's address bar:
+              <code>docs.google.com/spreadsheets/d/<strong>XXXXX</strong>/edit</code>
+            </li>
+            <li>Copy the <strong>XXXXX</strong> part - that's your spreadsheet ID</li>
+          </ol>
+          <div class="modal-note">
+            <strong>Requirements:</strong>
+            <ul>
+              <li>You must have "Editor" access to the spreadsheet</li>
+              <li>Extension will auto-create "TikTok Download Log" sheet tab if missing</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

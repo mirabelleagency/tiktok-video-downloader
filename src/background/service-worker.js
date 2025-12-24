@@ -95,6 +95,15 @@ async function handleMessage(message, sender) {
     case 'setTargetSpreadsheet':
       return await setTargetSpreadsheet(message.data);
     
+    case 'validateFolder':
+      return await validateFolder(message.data);
+    
+    case 'validateSheet':
+      return await validateSheet(message.data);
+    
+    case 'settingsUpdated':
+      return await handleSettingsUpdate(message.data);
+    
     default:
       console.log('[SW] Unknown message type:', messageType);
       return { success: false, error: 'Unknown message type' };
@@ -241,12 +250,55 @@ async function getUserInfo(token) {
 
 // ============ GOOGLE DRIVE ============
 
+// Load custom settings
+async function loadCustomSettings() {
+  const { settings } = await chrome.storage.local.get('settings');
+  return settings || {};
+}
+
 async function ensureDriveFolder() {
+  console.log('[SW] ensureDriveFolder called');
+  
+  // Check if custom folder is enabled
+  const settings = await loadCustomSettings();
+  console.log('[SW] Settings:', JSON.stringify(settings));
+  
+  if (settings.useCustomFolderId && settings.customDriveFolderId) {
+    console.log('[SW] Using custom folder ID:', settings.customDriveFolderId);
+    // Validate custom folder still exists and is accessible
+    try {
+      const response = await fetch(
+        `${GOOGLE_APIS.DRIVE_FILES}/${settings.customDriveFolderId}?fields=id,name,trashed&supportsAllDrives=true`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      
+      console.log('[SW] Custom folder check response:', response.status);
+      
+      if (response.ok) {
+        const folder = await response.json();
+        console.log('[SW] Custom folder details:', folder.name, 'trashed:', folder.trashed);
+        if (!folder.trashed) {
+          driveFolderId = settings.customDriveFolderId;
+          console.log('[SW] Using custom folder:', folder.name, 'ID:', driveFolderId);
+          return driveFolderId;
+        }
+      } else {
+        const errorText = await response.text();
+        console.warn('[SW] Custom folder check failed:', response.status, errorText);
+      }
+      // Custom folder not accessible, fall back to default
+      console.warn('[SW] Custom folder not accessible, falling back to default');
+    } catch (e) {
+      console.warn('[SW] Custom folder validation failed, falling back to default:', e.message);
+    }
+  }
+  
+  // Default behavior - use or create standard folder
   if (driveFolderId) {
     // Verify folder still exists
     try {
       const response = await fetch(
-        `${GOOGLE_APIS.DRIVE_FILES}/${driveFolderId}?fields=id,name,trashed`,
+        `${GOOGLE_APIS.DRIVE_FILES}/${driveFolderId}?fields=id,name,trashed&supportsAllDrives=true`,
         { headers: { Authorization: `Bearer ${authToken}` } }
       );
       
@@ -330,7 +382,7 @@ async function uploadToDrive(videoData, videoBlob, _onProgress) {
   const body = new Blob([bodyStart, videoBlob, bodyEnd]);
   
   const response = await fetch(
-    `${GOOGLE_APIS.DRIVE_UPLOAD}?uploadType=multipart&fields=id,name,webViewLink,webContentLink`,
+    `${GOOGLE_APIS.DRIVE_UPLOAD}?uploadType=multipart&fields=id,name,webViewLink,webContentLink&supportsAllDrives=true`,
     {
       method: 'POST',
       headers: {
@@ -349,7 +401,7 @@ async function uploadToDrive(videoData, videoBlob, _onProgress) {
   const file = await response.json();
   
   // Make file viewable by anyone with link
-  await fetch(`${GOOGLE_APIS.DRIVE_FILES}/${file.id}/permissions`, {
+  await fetch(`${GOOGLE_APIS.DRIVE_FILES}/${file.id}/permissions?supportsAllDrives=true`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${authToken}`,
@@ -372,6 +424,39 @@ async function uploadToDrive(videoData, videoBlob, _onProgress) {
 // ============ GOOGLE SHEETS ============
 
 async function ensureSheet() {
+  // Check if custom spreadsheet is enabled
+  const settings = await loadCustomSettings();
+  
+  if (settings.useCustomSpreadsheetId && settings.customSpreadsheetId) {
+    // Validate custom spreadsheet still exists and is accessible
+    try {
+      const response = await fetch(
+        `${GOOGLE_APIS.SHEETS}/${settings.customSpreadsheetId}?fields=spreadsheetId,properties.title,sheets.properties`,
+        { headers: { Authorization: `Bearer ${authToken}` } }
+      );
+      
+      if (response.ok) {
+        const sheet = await response.json();
+        sheetId = settings.customSpreadsheetId;
+        console.log('[SW] Using custom spreadsheet:', sheet.properties.title);
+        
+        // Check if TikTok Download Log sheet tab exists, create if not
+        const hasLogSheet = sheet.sheets?.some(s => s.properties.title === CONFIG.SHEET_TAB_NAME);
+        if (!hasLogSheet) {
+          console.log('[SW] Creating TikTok Download Log sheet tab in custom spreadsheet');
+          await createDownloadsSheet(sheetId);
+        }
+        
+        return sheetId;
+      }
+      // Custom spreadsheet not accessible, fall back to default
+      console.warn('[SW] Custom spreadsheet not accessible, falling back to default');
+    } catch (e) {
+      console.warn('[SW] Custom spreadsheet validation failed, falling back to default:', e.message);
+    }
+  }
+  
+  // Default behavior
   if (sheetId) {
     // Verify sheet still exists
     try {
@@ -416,7 +501,7 @@ async function ensureSheet() {
       },
       sheets: [{
         properties: {
-          title: 'Downloads'
+          title: CONFIG.SHEET_TAB_NAME
         },
         data: [{
           startRow: 0,
@@ -467,7 +552,7 @@ async function logToSheet(videoData, driveFile, status = 'Success') {
   ]];
   
   const response = await fetch(
-    `${GOOGLE_APIS.SHEETS}/${sheetId}/values/Downloads!A:G:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+    `${GOOGLE_APIS.SHEETS}/${sheetId}/values/${encodeURIComponent(CONFIG.SHEET_TAB_NAME)}!A:G:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
     {
       method: 'POST',
       headers: {
@@ -614,10 +699,16 @@ async function downloadVideo(videoData, tabId) {
     sendProgressUpdate(tabId, 'Downloading video...', 30);
     sendProgressUpdate(tabId, 'Uploading to Google Drive...', 60);
     
+    // Ensure Drive folder exists before upload
+    await ensureDriveFolder();
+    
     // Upload to Drive (use sanitized data)
     const driveFile = await uploadToDrive(sanitizedData, videoBlob);
     
     sendProgressUpdate(tabId, 'Logging to Google Sheets...', 90);
+    
+    // Ensure Sheet exists before logging
+    await ensureSheet();
     
     // Log to Sheets
     await logToSheet(sanitizedData, driveFile);
@@ -799,6 +890,216 @@ async function setTargetSpreadsheet(data) {
   } catch (error) {
     console.error('[SW] Set target spreadsheet error:', error);
     return { success: false, error: error.message };
+  }
+}
+
+// ============ CUSTOM FOLDER/SPREADSHEET VALIDATION ============
+
+async function validateFolder(data) {
+  try {
+    console.log('[SW] validateFolder called with:', data);
+    
+    if (!data?.folderId) {
+      console.log('[SW] No folder ID provided');
+      return { success: false, error: 'No folder ID provided' };
+    }
+    
+    if (!authToken) {
+      console.log('[SW] No authToken, loading stored data...');
+      await loadStoredData();
+    }
+    
+    if (!authToken) {
+      console.log('[SW] Still no authToken after loadStoredData');
+      return { success: false, error: 'Not authenticated. Please sign in first.' };
+    }
+    
+    console.log('[SW] Validating folder with token:', authToken ? 'present' : 'missing');
+    
+    // Check if folder exists and get its details
+    // supportsAllDrives=true is required for shared drives/folders
+    const response = await fetch(
+      `${GOOGLE_APIS.DRIVE_FILES}/${data.folderId}?fields=id,name,mimeType,trashed,capabilities&supportsAllDrives=true`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+    
+    console.log('[SW] Folder validation response status:', response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('[SW] Folder validation error response:', errorText);
+      
+      if (response.status === 404) {
+        return { success: false, error: 'Folder not found. Please check the folder ID.' };
+      } else if (response.status === 403) {
+        return { success: false, error: 'Access denied. You do not have permission to access this folder.' };
+      }
+      throw new Error(`Failed to validate folder: ${response.status} - ${errorText}`);
+    }
+    
+    const folder = await response.json();
+    
+    // Check if it's actually a folder
+    if (folder.mimeType !== 'application/vnd.google-apps.folder') {
+      return { success: false, error: 'The provided ID is not a folder.' };
+    }
+    
+    // Check if folder is trashed
+    if (folder.trashed) {
+      return { success: false, error: 'This folder has been deleted.' };
+    }
+    
+    // Check write permissions
+    if (folder.capabilities && !folder.capabilities.canAddChildren) {
+      return { success: false, error: 'You do not have write access to this folder. Ask the owner for Editor access.' };
+    }
+    
+    return {
+      success: true,
+      folderName: folder.name,
+      folderId: folder.id
+    };
+  } catch (error) {
+    console.error('[SW] Folder validation error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function validateSheet(data) {
+  try {
+    if (!data?.sheetId) {
+      return { success: false, error: 'No spreadsheet ID provided' };
+    }
+    
+    if (!authToken) {
+      await loadStoredData();
+    }
+    
+    if (!authToken) {
+      return { success: false, error: 'Not authenticated. Please sign in first.' };
+    }
+    
+    // Check if spreadsheet exists and get its details
+    const response = await fetch(
+      `${GOOGLE_APIS.SHEETS}/${data.sheetId}?fields=spreadsheetId,properties.title,sheets.properties`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+    
+    if (!response.ok) {
+      if (response.status === 404) {
+        return { success: false, error: 'Spreadsheet not found. Please check the spreadsheet ID.' };
+      } else if (response.status === 403) {
+        return { success: false, error: 'Access denied. You do not have permission to access this spreadsheet.' };
+      }
+      throw new Error('Failed to validate spreadsheet');
+    }
+    
+    const sheet = await response.json();
+    
+    // Try to verify write access by checking if we can get sheet properties
+    // (If user has view-only access, they can still read but won't be able to write)
+    // We'll test write access by attempting to get values (which requires at least read access)
+    const writeTestResponse = await fetch(
+      `${GOOGLE_APIS.SHEETS}/${data.sheetId}/values/A1`,
+      { headers: { Authorization: `Bearer ${authToken}` } }
+    );
+    
+    if (!writeTestResponse.ok && writeTestResponse.status === 403) {
+      return { success: false, error: 'You do not have permission to access this spreadsheet. Ask the owner for Editor access.' };
+    }
+    
+    return {
+      success: true,
+      title: sheet.properties.title,
+      spreadsheetId: sheet.spreadsheetId
+    };
+  } catch (error) {
+    console.error('[SW] Spreadsheet validation error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function handleSettingsUpdate(settings) {
+  try {
+    console.log('[SW] Settings updated:', settings);
+    
+    // If custom folder is enabled, update driveFolderId
+    if (settings.useCustomFolderId && settings.customDriveFolderId) {
+      driveFolderId = settings.customDriveFolderId;
+      await chrome.storage.local.set({ [STORAGE_KEYS.DRIVE_FOLDER_ID]: settings.customDriveFolderId });
+    } else {
+      // Reset to null so ensureDriveFolder will create/find default folder
+      driveFolderId = null;
+      await chrome.storage.local.remove([STORAGE_KEYS.DRIVE_FOLDER_ID]);
+    }
+    
+    // If custom spreadsheet is enabled, update sheetId
+    if (settings.useCustomSpreadsheetId && settings.customSpreadsheetId) {
+      sheetId = settings.customSpreadsheetId;
+      await chrome.storage.local.set({ [STORAGE_KEYS.SHEET_ID]: settings.customSpreadsheetId });
+    } else {
+      // Reset to null so ensureSheet will create/find default sheet
+      sheetId = null;
+      await chrome.storage.local.remove([STORAGE_KEYS.SHEET_ID]);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('[SW] Settings update error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+async function createDownloadsSheet(spreadsheetId) {
+  try {
+    // Add a new sheet called "TikTok Download Log" with headers
+    await fetch(
+      `${GOOGLE_APIS.SHEETS}/${spreadsheetId}:batchUpdate`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          requests: [{
+            addSheet: {
+              properties: {
+                title: CONFIG.SHEET_TAB_NAME
+              }
+            }
+          }]
+        })
+      }
+    );
+    
+    // Add headers to the new sheet
+    await fetch(
+      `${GOOGLE_APIS.SHEETS}/${spreadsheetId}/values/${encodeURIComponent(CONFIG.SHEET_TAB_NAME)}!A1:G1?valueInputOption=USER_ENTERED`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          values: [[
+            'Timestamp',
+            'TikTok URL',
+            'Drive Link',
+            'File Name',
+            'Username',
+            'Description',
+            'Status'
+          ]]
+        })
+      }
+    );
+    
+    console.log('[SW] Created TikTok Download Log sheet in custom spreadsheet');
+  } catch (error) {
+    console.error('[SW] Failed to create TikTok Download Log sheet:', error);
+    // Don't throw - logging will still work, just without headers
   }
 }
 

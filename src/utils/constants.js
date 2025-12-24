@@ -52,13 +52,15 @@ export const STORAGE_KEYS = {
   DRIVE_FOLDER_ID: 'driveFolderId',
   SHEET_ID: 'sheetId',
   RECENT_ACTIVITY: 'recentActivity',
-  USER_INFO: 'userInfo'
+  USER_INFO: 'userInfo',
+  SETTINGS: 'settings'
 };
 
 // Extension settings
 export const CONFIG = {
   DRIVE_FOLDER_NAME: 'TikTok Downloads',
   SHEET_NAME: 'TikTok Download Log',
+  SHEET_TAB_NAME: 'TikTok Download Log',
   MAX_RECENT_ACTIVITY: 10,
   REQUEST_TIMEOUT: 30000
 };

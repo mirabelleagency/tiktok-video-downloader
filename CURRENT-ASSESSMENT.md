@@ -261,6 +261,23 @@ Total: 188 tests passing
 
 ## Recent Changes Summary
 
+### Shared Folder Support (Latest)
+- **Problem:** Uploads to Google Drive shared folders failed with "File not found" 404 errors
+- **Root Cause:** 
+  1. Missing `supportsAllDrives=true` parameter on Drive API calls
+  2. `ensureDriveFolder()` was only called during authentication, not before upload
+- **Solution:**
+  - Added `supportsAllDrives=true` to all Drive API calls (upload, folder check, permissions)
+  - Added `ensureDriveFolder()` call before each `uploadToDrive()` operation
+  - Added `ensureSheet()` call before each `logToSheet()` operation
+  - Added debug logging for troubleshooting folder validation
+- **UI Changes:**
+  - Merged "Custom Spreadsheet" section into "Google Sheets" section for cleaner UI
+  - Custom spreadsheet toggle, picker, and status now in single unified section
+- **Sheet Tab Naming:**
+  - When using custom spreadsheet, creates/uses "TikTok Download Log" tab
+  - Added `CONFIG.SHEET_TAB_NAME` constant for consistency
+
 ### For You Page Detection Fix
 - **Problem:** Extension didn't detect videos on FYP (https://www.tiktok.com/)
 - **Root Cause:** URL pattern `/tiktok\.com\/foryou/` didn't match root URL

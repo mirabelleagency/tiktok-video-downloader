@@ -12,7 +12,9 @@ Download TikTok videos directly to Google Drive with automatic logging to Google
 - 🔒 **Security**: Input validation, URL sanitization, Content Security Policy
 - 🔄 **Reliability**: Retry mechanism with exponential backoff, network detection
 - ✅ **Tested**: 188 tests covering all major functionality
-- 🏠 **For You Page Support**: Downloads from FYP and homepage ✨ NEW
+- 🏠 **For You Page Support**: Downloads from FYP and homepage
+- 📁 **Custom Folder Support**: Save to shared Google Drive folders ✨ NEW
+- 📋 **Custom Spreadsheet Support**: Log to shared team spreadsheets ✨ NEW
 
 ## Installation
 
@@ -97,6 +99,28 @@ tiktok-video-downloader/
 
 | Timestamp | TikTok URL | Drive Link | File Name | Username | Description | Status |
 |-----------|------------|------------|-----------|----------|-------------|--------|
+
+## Custom Folder & Spreadsheet Support
+
+### Using a Custom Google Drive Folder
+
+1. Go to extension settings (right-click icon → Options)
+2. Check "Use custom Drive folder"
+3. Enter the folder ID (found in the folder URL: `drive.google.com/drive/folders/XXXXX`)
+4. Click "Test Folder Access" to verify
+5. Save settings
+
+**For shared folders**: You need "Editor" access. Ask the folder owner to share it with you.
+
+### Using a Custom Spreadsheet
+
+1. Go to extension settings
+2. Check "Use custom spreadsheet ID"
+3. Enter the spreadsheet ID (found in the URL: `docs.google.com/spreadsheets/d/XXXXX/edit`)
+4. Click "Test Spreadsheet Access" to verify
+5. Save settings
+
+**Note**: The extension will auto-create a "Downloads" sheet tab if it doesn't exist.
 
 ## Development
 

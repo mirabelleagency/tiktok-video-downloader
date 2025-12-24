@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Custom Drive folder support: Save videos to any folder you have access to (including shared folders)
+- Custom spreadsheet support: Log downloads to shared team spreadsheets  
+- Folder access validation with detailed error messages
+- Spreadsheet access validation with detailed error messages
+- Help modals explaining how to find folder/spreadsheet IDs
+- Auto-create "TikTok Download Log" sheet tab in custom spreadsheets
+- Settings synchronization with service worker
+- `supportsAllDrives=true` parameter for shared folder/drive compatibility
+- Debug logging for troubleshooting folder access issues
+
+### Changed
+- Custom spreadsheet section merged into Google Sheets section in options UI
+- Sheet tab name changed from "Downloads" to "TikTok Download Log" for consistency
+- ensureDriveFolder and ensureSheet now called before each upload/log operation
+- validateFolder and validateSheet action names aligned with Instagram extension
+
+### Fixed
+- Shared folder access now works with supportsAllDrives parameter
+- Drive upload now works with shared team folders
+
 ## [1.0.1] - 2025-12-23
 
 ### Added
