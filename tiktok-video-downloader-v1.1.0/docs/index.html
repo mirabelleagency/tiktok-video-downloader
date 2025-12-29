@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok Video Downloader to Drive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #e0e0e0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            text-align: center;
+            background: rgba(26, 26, 46, 0.9);
+            border-radius: 24px;
+            padding: 60px 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(37, 244, 238, 0.1);
+        }
+        
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            background: linear-gradient(135deg, #25f4ee 0%, #00d4aa 50%, #fe2c55 100%);
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(37, 244, 238, 0.3);
+        }
+        
+        .logo svg {
+            width: 70px;
+            height: 70px;
+        }
+        
+        h1 {
+            color: #ffffff;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #25f4ee;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+        
+        .description {
+            color: #aaa;
+            margin-bottom: 40px;
+            font-size: 1rem;
+        }
+        
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+        
+        .feature {
+            background: rgba(37, 244, 238, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #25f4ee;
+        }
+        
+        .links {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .link {
+            display: inline-block;
+            padding: 15px 30px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .link-primary {
+            background: linear-gradient(135deg, #25f4ee 0%, #00d4aa 100%);
+            color: #1a1a2e;
+        }
+        
+        .link-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(37, 244, 238, 0.4);
+        }
+        
+        .link-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .link-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .footer a {
+            color: #888;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            color: #25f4ee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 5V19L19 12L8 5Z" fill="#1a1a2e"/>
+                <path d="M12 16L12 22M12 22L8 18M12 22L16 18" stroke="#1a1a2e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        
+        <h1>TikTok Video Downloader</h1>
+        <p class="subtitle">to Google Drive</p>
+        
+        <p class="description">
+            A Chrome extension that lets you download TikTok videos directly to your Google Drive with automatic logging.
+        </p>
+        
+        <div class="features">
+            <span class="feature">📥 One-Click Download</span>
+            <span class="feature">☁️ Google Drive</span>
+            <span class="feature">📊 Auto Logging</span>
+            <span class="feature">🔒 Secure</span>
+        </div>
+        
+        <div class="links">
+            <a href="#" class="link link-primary">
+                Install from Chrome Web Store
+            </a>
+            <a href="privacy-policy.html" class="link link-secondary">
+                Privacy Policy
+            </a>
+            <a href="terms-of-service.html" class="link link-secondary">
+                Terms of Service
+            </a>
+        </div>
+        
+        <div class="footer">
+            <p>Not affiliated with TikTok or Google</p>
+            <p><a href="privacy-policy.html">Privacy Policy</a> · <a href="terms-of-service.html">Terms of Service</a></p>
+        </div>
+    </div>
+</body>
+</html>

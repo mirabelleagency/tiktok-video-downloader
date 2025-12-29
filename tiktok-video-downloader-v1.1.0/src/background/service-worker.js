@@ -268,9 +268,6 @@ async function ensureDriveFolder() {
   } catch (e) {
     console.error('[SW] Hardcoded folder validation failed:', e.message);
     throw new Error('Cannot access the configured Google Drive folder. Please contact the administrator.');
-  }
-}
-
 async function uploadToDrive(videoData, videoBlob, _onProgress) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const fileName = `tiktok_@${videoData.username}_${videoData.videoId}_${timestamp}.mp4`;
@@ -735,6 +732,7 @@ async function setTargetSpreadsheet(data) {
     console.error('[SW] Set target spreadsheet error:', error);
     return { success: false, error: error.message };
   }
+}
 }
 
 async function createDownloadsSheet(spreadsheetId) {

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 48 48" fill="none">
+  <!-- Background - dark gradient -->
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="8" fill="url(#bgGrad)"/>
+  
+  <!-- Play button circle -->
+  <circle cx="24" cy="21" r="14" fill="#00d4aa"/>
+  
+  <!-- Play triangle -->
+  <path d="M20 14 L32 21 L20 28 Z" fill="#1a1a2e"/>
+  
+  <!-- Download arrow stem -->
+  <rect x="22" y="30" width="4" height="6" fill="#ffffff"/>
+  
+  <!-- Download arrow head -->
+  <path d="M18 36 L30 36 L24 44 Z" fill="#ffffff"/>
+  
+  <!-- Download base line -->
+  <line x1="14" y1="44" x2="34" y2="44" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+</svg>

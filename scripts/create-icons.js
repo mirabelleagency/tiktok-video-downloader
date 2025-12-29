@@ -1,5 +1,5 @@
-// Simple Icon Generator - Creates Video Download icons
-// Design: Download arrow with play symbol (copyright-free)
+// TikTok Logo Icon Generator
+// Design: TikTok music note logo
 const { createCanvas } = require('canvas');
 const fs = require('fs');
 const path = require('path');
@@ -16,14 +16,11 @@ function generateIcon(size) {
   const canvas = createCanvas(size, size);
   const ctx = canvas.getContext('2d');
   
-  // Background - gradient rounded square (dark blue to purple)
+  // Background - black (TikTok style)
   const radius = size * 0.18;
-  const gradient = ctx.createLinearGradient(0, 0, size, size);
-  gradient.addColorStop(0, '#1a1a2e');
-  gradient.addColorStop(1, '#16213e');
+  ctx.fillStyle = '#000000';
   
   // Draw rounded rectangle background
-  ctx.fillStyle = gradient;
   ctx.beginPath();
   ctx.moveTo(radius, 0);
   ctx.lineTo(size - radius, 0);
@@ -38,55 +35,64 @@ function generateIcon(size) {
   ctx.fill();
   
   const scale = size / 48; // Base design is 48px
-  const centerX = size / 2;
-  const centerY = size / 2;
   
-  // Draw play button circle (teal/cyan accent)
-  const circleRadius = 14 * scale;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY - 3 * scale, circleRadius, 0, Math.PI * 2);
-  ctx.fillStyle = '#00d4aa';
-  ctx.fill();
+  // TikTok music note design
+  // Draw the cyan/teal shadow (offset left)
+  ctx.fillStyle = '#25F4EE'; // TikTok cyan
+  drawMusicNote(ctx, size * 0.18, size * 0.12, scale);
   
-  // Draw play triangle inside circle
-  ctx.fillStyle = '#1a1a2e';
-  ctx.beginPath();
-  const playX = centerX - 3 * scale;
-  const playY = centerY - 3 * scale;
-  const playSize = 10 * scale;
-  ctx.moveTo(playX - playSize * 0.4, playY - playSize * 0.6);
-  ctx.lineTo(playX + playSize * 0.6, playY);
-  ctx.lineTo(playX - playSize * 0.4, playY + playSize * 0.6);
-  ctx.closePath();
-  ctx.fill();
+  // Draw the red/pink shadow (offset right)  
+  ctx.fillStyle = '#FE2C55'; // TikTok red/pink
+  drawMusicNote(ctx, size * 0.24, size * 0.12, scale);
   
-  // Draw download arrow below
-  const arrowY = centerY + 12 * scale;
-  const arrowWidth = 6 * scale;
-  const arrowHeight = 8 * scale;
-  
-  // Arrow stem
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(centerX - 2 * scale, centerY + 6 * scale, 4 * scale, 6 * scale);
-  
-  // Arrow head (triangle pointing down)
-  ctx.beginPath();
-  ctx.moveTo(centerX - arrowWidth, arrowY);
-  ctx.lineTo(centerX + arrowWidth, arrowY);
-  ctx.lineTo(centerX, arrowY + arrowHeight);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Download base line
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 2 * scale;
-  ctx.lineCap = 'round';
-  ctx.beginPath();
-  ctx.moveTo(centerX - 10 * scale, centerY + 20 * scale);
-  ctx.lineTo(centerX + 10 * scale, centerY + 20 * scale);
-  ctx.stroke();
+  // Draw the white main note
+  ctx.fillStyle = '#FFFFFF';
+  drawMusicNote(ctx, size * 0.21, size * 0.12, scale);
   
   return canvas.toBuffer('image/png');
+}
+
+function drawMusicNote(ctx, offsetX, offsetY, scale) {
+  ctx.beginPath();
+  
+  // TikTok note shape - simplified music note
+  const noteWidth = 22 * scale;
+  const noteHeight = 32 * scale;
+  
+  // Main vertical stem
+  ctx.moveTo(offsetX + noteWidth * 0.7, offsetY);
+  ctx.lineTo(offsetX + noteWidth, offsetY);
+  ctx.lineTo(offsetX + noteWidth, offsetY + noteHeight * 0.75);
+  
+  // Bottom circle (note head)
+  ctx.arc(
+    offsetX + noteWidth * 0.65, 
+    offsetY + noteHeight * 0.85, 
+    noteWidth * 0.35, 
+    0, 
+    Math.PI * 2
+  );
+  
+  ctx.moveTo(offsetX + noteWidth * 0.7, offsetY);
+  ctx.lineTo(offsetX + noteWidth, offsetY);
+  
+  // Top curved part extending right
+  ctx.moveTo(offsetX + noteWidth, offsetY);
+  ctx.quadraticCurveTo(
+    offsetX + noteWidth * 1.5, 
+    offsetY + noteHeight * 0.15,
+    offsetX + noteWidth * 1.4, 
+    offsetY + noteHeight * 0.35
+  );
+  ctx.lineTo(offsetX + noteWidth * 1.1, offsetY + noteHeight * 0.3);
+  ctx.quadraticCurveTo(
+    offsetX + noteWidth * 1.2, 
+    offsetY + noteHeight * 0.15,
+    offsetX + noteWidth * 0.7, 
+    offsetY
+  );
+  
+  ctx.fill();
 }
 
 // Generate all icon sizes
